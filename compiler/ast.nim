@@ -1461,18 +1461,46 @@ proc shallowCopy*(src: PNode): PNode =
 type CopyTreeTask = tuple[src: PNode, dest: PNode, i: int]
 
 proc copyTree*(n: PNode): PNode =
-  let destParent = newNode(nkWith)
-  destParent.sons = newSeq[PNode](1)
-  var tasks: seq[CopyTreeTask] = @[]
-  var task: CopyTreeTask = (nil, destParent, 0)
-  var src = n
-  var dest: PNode
   # copy a whole syntax tree; performs deep copying
+  var tasks: seq[CopyTreeTask]
+  var task: CopyTreeTask
+  var src = n
+  var dest = newNode(src.kind)
+  if src == nil: return nil
+  else:
+    dest.info = src.info
+    dest.typ = src.typ
+    dest.flags = src.flags * PersistentNodeFlags
+    result = dest
+    when defined(useNodeIds):
+      if dest.id == nodeIdToDebug:
+        echo "COMES FROM ", src.id
+    case src.kind
+    of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal; return dest
+    of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal; return dest
+    of nkSym: dest.sym = src.sym; return dest
+    of nkIdent: dest.ident = src.ident; return dest
+    of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal; return dest
+    else:
+      let sons = sonsLen(src)
+      newSeq(dest.sons, sons)
+      if sons > 0:
+        task = (src, dest, sons - 1)
+        tasks = @[task]
+      else:
+        return
   while true:
-    block basic:
-      if src == nil:
-        task.dest.sons[task.i] = nil
-        break basic
+    if task.i > 0:
+      task.i -= 1
+      src = task.src.sons[task.i]
+    elif tasks.len == 0:
+      break
+    else:
+      task = tasks.pop()
+      src = task.src.sons[task.i]
+    if src == nil:
+      task.dest.sons[task.i] = nil
+    else:
       dest = newNode(src.kind)
       dest.info = src.info
       dest.typ = src.typ
@@ -1492,14 +1520,6 @@ proc copyTree*(n: PNode): PNode =
         newSeq(dest.sons, sons)
         if sons > 0:
           tasks.add((src, dest, sons - 1))
-    if task.i > 0:
-      task.i -= 1
-      src = task.src.sons[task.i]
-    elif tasks.len == 0:
-      return destParent.sons[0]
-    else:
-      task = tasks.pop()
-      src = task.src.sons[task.i]
 
 proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
   for i in countup(0, sonsLen(n) - 1):
