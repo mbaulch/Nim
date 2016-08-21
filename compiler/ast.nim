@@ -1489,8 +1489,10 @@ proc copyTree(src: PNode, tasks: seq[CopyTreeTask]): PNode =
     if copyTreeBasic(task.src.sons[task.i], task.dest.sons[task.i]):
       let src = task.src.sons[task.i]
       let dest = task.dest.sons[task.i]
-      for j in countup(0, sonsLen(src) - 1):
-        tasks.add((src, dest, j))
+      if sonsLen(src) > 0:
+        tasks.add((src, dest, sonsLen(src) - 1))
+    if task.i > 0:
+      tasks.add((task.src, task.dest, task.i - 1))
 
 proc copyTree*(src: PNode): PNode =
   let srcParent = newNode(nkWith)
