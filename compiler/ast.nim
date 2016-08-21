@@ -1498,9 +1498,7 @@ proc copyTree*(n: PNode): PNode =
     else:
       task = tasks.pop()
       src = task.src.sons[task.i]
-    if src == nil:
-      task.dest.sons[task.i] = nil
-    else:
+    if src != nil:
       dest = newNode(src.kind)
       dest.info = src.info
       dest.typ = src.typ
@@ -1520,6 +1518,8 @@ proc copyTree*(n: PNode): PNode =
         newSeq(dest.sons, sons)
         if sons > 0:
           tasks.add((src, dest, sons - 1))
+    else:
+      task.dest.sons[task.i] = nil
 
 proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
   for i in countup(0, sonsLen(n) - 1):
