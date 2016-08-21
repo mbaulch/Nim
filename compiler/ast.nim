@@ -1466,8 +1466,7 @@ proc copyTree*(n: PNode): PNode =
   var task: CopyTreeTask
   var src = n
   var dest = newNode(src.kind)
-  if src == nil: return nil
-  else:
+  if src != nil:
     dest.info = src.info
     dest.typ = src.typ
     dest.flags = src.flags * PersistentNodeFlags
@@ -1476,51 +1475,51 @@ proc copyTree*(n: PNode): PNode =
       if dest.id == nodeIdToDebug:
         echo "COMES FROM ", src.id
     case src.kind
-    of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal; return dest
-    of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal; return dest
-    of nkSym: dest.sym = src.sym; return dest
-    of nkIdent: dest.ident = src.ident; return dest
-    of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal; return dest
+    of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
+    of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
+    of nkSym: dest.sym = src.sym
+    of nkIdent: dest.ident = src.ident
+    of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
     else:
       let sons = sonsLen(src)
       newSeq(dest.sons, sons)
       if sons > 0:
         task = (src, dest, sons - 1)
-        tasks = @[task]
-      else:
-        return
-  while true:
-    if task.i > 0:
-      task.i -= 1
-      src = task.src.sons[task.i]
-    elif tasks.len == 0:
-      break
-    else:
-      task = tasks.pop()
-      src = task.src.sons[task.i]
-    if src != nil:
-      dest = newNode(src.kind)
-      dest.info = src.info
-      dest.typ = src.typ
-      dest.flags = src.flags * PersistentNodeFlags
-      task.dest.sons[task.i] = dest
-      when defined(useNodeIds):
-        if dest.id == nodeIdToDebug:
-          echo "COMES FROM ", src.id
-      case src.kind
-      of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
-      of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
-      of nkSym: dest.sym = src.sym
-      of nkIdent: dest.ident = src.ident
-      of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
-      else:
-        let sons = sonsLen(src)
-        newSeq(dest.sons, sons)
-        if sons > 0:
-          tasks.add((src, dest, sons - 1))
-    else:
-      task.dest.sons[task.i] = nil
-
+        if sons > 1:
+          tasks = @[task]
+          task.i -= 1
+          src = task.src.sons[task.i]
+        else:
+          tasks = @[]
+          src = task.src.sons[0]
+        while true:
+          if src != nil:
+            dest = newNode(src.kind)
+            dest.info = src.info
+            dest.typ = src.typ
+            dest.flags = src.flags * PersistentNodeFlags
+            task.dest.sons[task.i] = dest
+            when defined(useNodeIds):
+              if dest.id == nodeIdToDebug:
+                echo "COMES FROM ", src.id
+            case src.kind
+            of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
+            of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
+            of nkSym: dest.sym = src.sym
+            of nkIdent: dest.ident = src.ident
+            of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
+            else:
+              let sons = sonsLen(src)
+              newSeq(dest.sons, sons)
+              if sons > 0:
+                tasks.add((src, dest, sons - 1))
+          else:
+            task.dest.sons[task.i] = nil
+          if task.i > 0: task.i -= 1
+          elif tasks.len > 0: task = tasks.pop()
+          else: break
+          src = task.src.sons[task.i]
+  
 proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
   for i in countup(0, sonsLen(n) - 1):
     if n.sons[i].kind == kind:
