@@ -1458,28 +1458,7 @@ proc shallowCopy*(src: PNode): PNode =
   of nkStrLit..nkTripleStrLit: result.strVal = src.strVal
   else: newSeq(result.sons, sonsLen(src))
 
-proc copyTreeBasic*(src: Pnode, dest: var PNode): bool =
-  if src == nil:
-    dest = nil
-    return
-  dest = newNode(src.kind)
-  dest.info = src.info
-  dest.typ = src.typ
-  dest.flags = src.flags * PersistentNodeFlags
-  when defined(useNodeIds):
-    if dest.id == nodeIdToDebug:
-      echo "COMES FROM ", src.id
-  case src.kind
-  of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
-  of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
-  of nkSym: dest.sym = src.sym
-  of nkIdent: dest.ident = src.ident
-  of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
-  else:
-    newSeq(dest.sons, sonsLen(src))
-    result = true
-
-type CopyTreeTask = tuple[src: PNode, dest: PNode]
+type CopyTreeTask = tuple[src: PNode, dest: PNode, i: int]
 
 proc copyTree*(n: PNode): PNode =
   let destParent = newNode(nkWith)
@@ -1487,12 +1466,32 @@ proc copyTree*(n: PNode): PNode =
   var tasks: seq[CopyTreeTask] = @[]
   var task: CopyTreeTask = (nil, destParent, 0)
   var src = n
+  var dest: PNode
   # copy a whole syntax tree; performs deep copying
   while true:
-    if copyTreeBasic(src, task.dest.sons[task.i]):
-      let sons = sonsLen(src)
-      if sons > 0:
-        tasks.add((src, task.dest.sons[task.i], sons - 1))
+    block basic:
+      if src == nil:
+        task.dest.sons[task.i] = nil
+        break basic
+      dest = newNode(src.kind)
+      dest.info = src.info
+      dest.typ = src.typ
+      dest.flags = src.flags * PersistentNodeFlags
+      task.dest.sons[task.i] = dest
+      when defined(useNodeIds):
+        if dest.id == nodeIdToDebug:
+          echo "COMES FROM ", src.id
+      case src.kind
+      of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
+      of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
+      of nkSym: dest.sym = src.sym
+      of nkIdent: dest.ident = src.ident
+      of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
+      else:
+        let sons = sonsLen(src)
+        newSeq(dest.sons, sons)
+        if sons > 0:
+          tasks.add((src, dest, sons - 1))
     if task.i > 0:
       task.i -= 1
       src = task.src.sons[task.i]
