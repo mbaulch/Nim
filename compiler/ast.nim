@@ -1481,33 +1481,36 @@ proc copyTreeBasic*(src: Pnode, dest: var PNode): bool =
 
 type CopyTreeTask = tuple[src: PNode, dest: PNode]
 
-proc copyTree(src: PNode, srcs: seq[PNode], dests: seq[PNode], taskIndices: seq[int]): PNode =
+proc copyTree(srcs: seq[PNode], dests: seq[PNode], taskIndices: seq[int]): PNode =
   var srcs = srcs
   var dests = dests
   var taskIndices = taskIndices
   # copy a whole syntax tree; performs deep copying
   while srcs.len > 0:
     let taskIdx = taskIndices[^1]
-    let src = srcs[^1]
-    let dest = dests[^1]
+    var src, dest: PNode
     if taskIdx > 0:
       taskIndices[^1] = taskIdx - 1
+      src = srcs[^1]
+      dest = dests[^1]
     else:
-      discard srcs.pop()
-      discard dests.pop()
+      src = srcs.pop()
+      dest = dests.pop()
       discard taskIndices.pop()
     if copyTreeBasic(src.sons[taskIdx], dest.sons[taskIdx]):
-      if sonsLen(src.sons[taskIdx]) > 0:
-        srcs.add(src.sons[taskIdx])
-        dests.add(dest.sons[taskIdx])
-        taskIndices.add(sonsLen(src.sons[taskIdx]) - 1)
+      src = src.sons[taskIdx]
+      dest = dest.sons[taskIdx]
+      if sonsLen(src) > 0:
+        srcs.add(src)
+        dests.add(dest)
+        taskIndices.add(sonsLen(src) - 1)
 
 proc copyTree*(src: PNode): PNode =
   let srcParent = newNode(nkWith)
   srcParent.sons = @[src]
   let destParent = newNode(nkWith)
   destParent.sons = newSeq[PNode](1)
-  discard copyTree(src, @[srcParent], @[destParent], @[0])
+  discard copyTree(@[srcParent], @[destParent], @[0])
   destParent.sons[0]
 
 proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
