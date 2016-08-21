@@ -1458,27 +1458,47 @@ proc shallowCopy*(src: PNode): PNode =
   of nkStrLit..nkTripleStrLit: result.strVal = src.strVal
   else: newSeq(result.sons, sonsLen(src))
 
-proc copyTree*(src: PNode): PNode =
-  # copy a whole syntax tree; performs deep copying
+proc copyTreeBasic*(src: Pnode, dest: var PNode): bool =
   if src == nil:
-    return nil
-  result = newNode(src.kind)
-  result.info = src.info
-  result.typ = src.typ
-  result.flags = src.flags * PersistentNodeFlags
+    dest = nil
+    return
+  dest = newNode(src.kind)
+  dest.info = src.info
+  dest.typ = src.typ
+  dest.flags = src.flags * PersistentNodeFlags
   when defined(useNodeIds):
-    if result.id == nodeIdToDebug:
+    if dest.id == nodeIdToDebug:
       echo "COMES FROM ", src.id
   case src.kind
-  of nkCharLit..nkUInt64Lit: result.intVal = src.intVal
-  of nkFloatLit..nkFloat128Lit: result.floatVal = src.floatVal
-  of nkSym: result.sym = src.sym
-  of nkIdent: result.ident = src.ident
-  of nkStrLit..nkTripleStrLit: result.strVal = src.strVal
+  of nkCharLit..nkUInt64Lit: dest.intVal = src.intVal
+  of nkFloatLit..nkFloat128Lit: dest.floatVal = src.floatVal
+  of nkSym: dest.sym = src.sym
+  of nkIdent: dest.ident = src.ident
+  of nkStrLit..nkTripleStrLit: dest.strVal = src.strVal
   else:
-    newSeq(result.sons, sonsLen(src))
-    for i in countup(0, sonsLen(src) - 1):
-      result.sons[i] = copyTree(src.sons[i])
+    newSeq(dest.sons, sonsLen(src))
+    result = true
+
+type CopyTreeTask = tuple[src: PNode, dest: PNode, i: int]
+
+proc copyTree(src: PNode, tasks: seq[CopyTreeTask]): PNode =
+  var tasks = tasks
+  # copy a whole syntax tree; performs deep copying
+  while tasks.len > 0:
+    let task = tasks.pop()
+    if copyTreeBasic(task.src.sons[task.i], task.dest.sons[task.i]):
+      let src = task.src.sons[task.i]
+      let dest = task.dest.sons[task.i]
+      for j in countup(0, sonsLen(src) - 1):
+        tasks.add((src, dest, j))
+
+proc copyTree*(src: PNode): PNode =
+  let srcParent = newNode(nkWith)
+  srcParent.sons = @[src]
+  let destParent = newNode(nkWith)
+  destParent.sons = newSeq[PNode](1)
+  discard copyTree(src, @[(srcParent, destParent, 0)])
+  destParent.sons[0]
 
 proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
   for i in countup(0, sonsLen(n) - 1):
