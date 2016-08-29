@@ -1343,6 +1343,8 @@ proc gsub(g: var TSrcGen, n: PNode, c: TContext) =
     put(g, tkTuple, "breakstate")
   of nkTypeClassTy:
     gTypeClassTy(g, n)
+  of nkIteratorBody:
+    put(g, tkTuple, "iteratorbody")
   else:
     #nkNone, nkExplicitTypeListCall:
     internalError(n.info, "rnimsyn.gsub(" & $n.kind & ')')

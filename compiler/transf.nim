@@ -508,6 +508,8 @@ proc findWrongOwners(c: PTransf, n: PNode) =
 proc transformFor(c: PTransf, n: PNode): PTransNode =
   # generate access statements for the parameters (unless they are constant)
   # put mapping from formal parameters to actual parameters
+  #echo "transformFor: " & $n
+  #echo "current owner: "& $getCurrOwner(c).ast
   if n.kind != nkForStmt: internalError(n.info, "transformFor")
 
   var length = sonsLen(n)
@@ -521,12 +523,13 @@ proc transformFor(c: PTransf, n: PNode): PTransNode =
     result[1] = newNode(nkEmpty).PTransNode
     return result
   c.breakSyms.add(labl)
+  let currentOwner = getCurrOwner(c)
   if call.kind notin nkCallKinds or call.sons[0].kind != nkSym or
       call.sons[0].typ.callConv == ccClosure:
     n.sons[length-1] = transformLoopBody(c, n.sons[length-1]).PNode
     if not c.tooEarly:
       n.sons[length-2] = transform(c, n.sons[length-2]).PNode
-      result[1] = lambdalifting.liftForLoop(n, getCurrOwner(c)).PTransNode
+      result[1] = lambdalifting.liftForLoop(n, currentOwner).PTransNode
     else:
       result[1] = newNode(nkEmpty).PTransNode
     discard c.breakSyms.pop
@@ -580,6 +583,8 @@ proc transformFor(c: PTransf, n: PNode): PTransNode =
       idNodeTablePut(newC.mapping, formal, temp)
 
   var body = iter.getBody.copyTree
+  #echo "iterator body kind: " & $body.kind
+  #if body.kind == nkBlockStmt: echo "block statement: " & $body
   pushInfoContext(n.info)
   # XXX optimize this somehow. But the check "c.inlining" is not correct:
   var symMap: TIdTable
@@ -588,6 +593,12 @@ proc transformFor(c: PTransf, n: PNode): PTransNode =
 
   inc(c.inlining)
   add(stmtList, transform(c, body))
+  if optStackTrace in currentOwner.options:
+    let ib = newTransNode(nkIteratorBody, n.info, 1)
+    var owner = newNodeI(nkSym, n.info, 0)
+    owner.sym = call.sons[0].sym #getCurrOwner(c)
+    ib[0] = owner.PTransNode
+    add(stmtList, ib)
   #findWrongOwners(c, stmtList.pnode)
   dec(c.inlining)
   popInfoContext()

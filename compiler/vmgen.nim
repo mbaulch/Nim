@@ -1745,7 +1745,8 @@ proc gen(c: PCtx; n: PNode; dest: var TDest; flags: TGenFlags = {}) =
   of nkStmtList:
     #unused(n, dest)
     # XXX Fix this bug properly, lexim triggers it
-    for x in n: gen(c, x)
+    let sonsToTake = sonsLen(n) - (if n.sons[^1].kind == nkIteratorBody: 1 else: 0)
+    for i in 0..<sonsToTake: gen(c, n.sons[i])
   of nkStmtListExpr:
     let L = n.len-1
     for i in 0 .. <L: gen(c, n.sons[i])

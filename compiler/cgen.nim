@@ -457,6 +457,9 @@ proc initLocExprSingleUse(p: BProc, e: PNode, result: var TLoc) =
 proc lenField(p: BProc): Rope =
   result = rope(if p.module.compileToCpp: "len" else: "Sup.len")
 
+proc initFrame(p: BProc, procname, filename: Rope): Rope
+proc deinitFrame(p: BProc): Rope
+
 include ccgcalls, "ccgstmts.nim", "ccgexprs.nim"
 
 # ----------------------------- dynamic library handling -----------------
@@ -660,6 +663,10 @@ proc genProcAux(m: BModule, prc: PSym) =
     if optStackTrace in prc.options:
       add(generatedProc, p.s(cpsLocals))
       var procname = makeCString(prc.name.s)
+    #result = rfmt(nil, "\tnimfrs($1, $2, $3, $4)$N",
+                  #procname, filename, p.maxFrameLen.rope,
+                  #p.blocks[0].frameLen.rope)
+      add(generatedProc, " NI32 __nimfr_count = 0; ")
       add(generatedProc, initFrame(p, procname, prc.info.quotedFilename))
     else:
       add(generatedProc, p.s(cpsLocals))
@@ -671,7 +678,10 @@ proc genProcAux(m: BModule, prc: PSym) =
     add(generatedProc, p.s(cpsStmts))
     if p.beforeRetNeeded: add(generatedProc, ~"\t}BeforeRet: ;$n")
     add(generatedProc, deinitGCFrame(p))
-    if optStackTrace in prc.options: add(generatedProc, deinitFrame(p))
+    if optStackTrace in prc.options:
+      #add(generatedProc, deinitFrame(p))
+      add(generatedProc, "while (__nimfr_count-- > 0)")
+      add(generatedProc, rfmt(p.module, "\t#popFrame();$n"))
     add(generatedProc, returnStmt)
     add(generatedProc, ~"}$N")
   add(m.s[cfsProcs], generatedProc)
@@ -983,6 +993,7 @@ proc genInitCode(m: BModule) =
     # BUT: the generated init code might depend on a current frame, so
     # declare it nevertheless:
     incl m.flags, frameDeclared
+    add(prc, "NI32 __nimfr_count = 0;")
     if preventStackTrace notin m.flags:
       var procname = makeCString(m.module.name.s)
       add(prc, initFrame(m.initProc, procname, m.module.info.quotedFilename))
@@ -1001,7 +1012,9 @@ proc genInitCode(m: BModule) =
   add(prc, m.postInitProc.s(cpsStmts))
   add(prc, genSectionEnd(cpsStmts))
   if optStackTrace in m.initProc.options and preventStackTrace notin m.flags:
-    add(prc, deinitFrame(m.initProc))
+    add(prc, "while (__nimfr_count-- > 0)")
+    add(prc, rfmt(m, "\t#popFrame();$n"))
+    #add(prc, deinitFrame(m.initProc))
   add(prc, deinitGCFrame(m.initProc))
   addf(prc, "}$N$N", [])
 
