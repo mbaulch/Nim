@@ -296,6 +296,7 @@ proc getStackTrace(e: ref Exception): string =
 
 when defined(nimRequiresNimFrame):
   proc stackOverflow() {.noinline.} =
+    echo "stack... is overflowing!"
     writeStackTrace()
     showErrorMessage("Stack overflow\n")
     quitOrDebug()

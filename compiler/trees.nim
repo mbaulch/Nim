@@ -103,6 +103,14 @@ proc getMagic*(op: PNode): TMagic =
     else: result = mNone
   else: result = mNone
 
+proc getIteratorBodyDepth*(n: PNode): int =
+  if n.kind notin {nkCharLit..nkTripleStrLit} + {nkSym, nkIdent}:
+    if n.sons.len > 0 and n.sons[^1].kind == nkIteratorBody: result += 1
+    var maxDepth = 0
+    for ns in n.sons:
+      maxDepth = max(maxDepth, getIteratorBodyDepth(ns))
+    result += maxDepth
+
 proc isConstExpr*(n: PNode): bool =
   result = (n.kind in
       {nkCharLit..nkInt64Lit, nkStrLit..nkTripleStrLit,

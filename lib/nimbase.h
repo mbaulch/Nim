@@ -403,17 +403,17 @@ struct TFrame {
 };
 
 #define nimfr(proc, file) \
-  TFrame FR; \
+  TFrame* FR = &__nimfr_arr[__nimfr_count]; \
   __nimfr_count++; \
-  FR.procname = proc; FR.filename = file; FR.line = 0; FR.len = 0; nimFrame(&FR);
-
+  FR->procname = proc; FR->filename = file; FR->line = 0; FR->len = 0; nimFrame(FR); \
+// TODO: Handle the nimfrs case properly. Use array (on stack) here too?
 #define nimfrs(proc, file, slots, length) \
   struct {TFrame* prev;NCSTRING procname;NI line;NCSTRING filename; NI len; VarSlot s[slots];} FR; \
   __nimfr_count++; \
   FR.procname = proc; FR.filename = file; FR.line = 0; FR.len = length; nimFrame((TFrame*)&FR);
 
 #define nimln(n, file) \
-  FR.line = n; FR.filename = file;
+  FR->line = n; FR->filename = file;
 
 #define NIM_POSIX_INIT  __attribute__((constructor))
 

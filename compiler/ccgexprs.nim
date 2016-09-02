@@ -2057,7 +2057,6 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
   of nkStmtList:
     var length = sonsLen(n)
     var startIndex: int
-    # TODO: Something like... if optStackTrace in p.prc.options:
     if length > 0 and n.sons[^1].kind == nkIteratorBody:
       let m = n.sons[^1].sons[0]
       var prc: PSym
@@ -2067,20 +2066,14 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
         assert(m.kind == nkClosure)
         prc = m.sons[0].sym
       let procname = makeCString(prc.name.s)
-      #add(p.s(cpsStmts), "NI16 __nimfr_count = 0;")
-      if optStackTrace in p.module.initProc.options and frameDeclared notin p.module.flags:
+      let newFrame = optStackTrace in p.module.initProc.options
+      if newFrame:
         add(p.s(cpsStmts), initFrame(p, procname, prc.info.quotedFilename))
       for i in countup(0, length - 2): genStmts(p, n.sons[i])
-      #add(p.s(cpsStmts), "while (__nimfr_count-- > 0)")
-      if optStackTrace in p.module.initProc.options and frameDeclared notin p.module.flags:
-        add(p.s(cpsStmts), " __nimfr_count--; ");
+      if newFrame:
+        add(p.s(cpsStmts), " __nimfr_count--;");
         add(p.s(cpsStmts), rfmt(p.module, "\t#popFrame();$n"))
-      #add(p.s(cpsStmts), deinitFrame(p))
-      #echo "n.sons[0].sons[^1]: " & $n.sons[0].sons[^1]
-      #echo "n.sons[0].sons[^1].kind: " & $n.sons[0].sons[^1].kind
       setLen(n.sons, length - 1)
-      #echo "n: " & $n
-      #echo "m: " & $m
     else:
       for i in countup(0, length - 1): genStmts(p, n.sons[i])
   of nkIfExpr, nkIfStmt: genIf(p, n, d)
