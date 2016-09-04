@@ -622,8 +622,6 @@ proc closureSetup(p: BProc, prc: PSym) =
 proc genProcAux(m: BModule, prc: PSym) =
   var p = newProc(prc, m)
   var iterBodyDepth: int
-  if optStackTrace in prc.options:
-    iterBodyDepth = getIteratorBodyDepth(prc.ast)
   var header = genProcHeader(m, prc)
   var returnStmt: Rope = nil
   assert(prc.ast != nil)
@@ -671,7 +669,6 @@ proc genProcAux(m: BModule, prc: PSym) =
                   #procname, filename, p.maxFrameLen.rope,
                   #p.blocks[0].frameLen.rope)
       add(generatedProc, " NI32 __nimfr_count = 0; ")
-      add(generatedProc, " /* in proc*/ TFrame __nimfr_arr[" & $(iterBodyDepth + 1) & "]; ")
       add(generatedProc, initFrame(p, procname, prc.info.quotedFilename))
     else:
       add(generatedProc, p.s(cpsLocals))
@@ -1000,13 +997,6 @@ proc genInitCode(m: BModule) =
     # declare it nevertheless:
     incl m.flags, frameDeclared
     add(prc, "NI32 __nimfr_count = 0;")
-    template iterBodyDepth(p: BProc): int =
-      if p.prc != nil: getIteratorBodyDepth(p.prc.ast) + 1
-      else: 1
-    var frameDepth = iterBodyDepth(m.preInitProc)
-    frameDepth = max(frameDepth, iterBodyDepth(m.initProc))
-    frameDepth = max(frameDepth, iterBodyDepth(m.postInitProc))
-    add(prc, " /* in init*/ TFrame __nimfr_arr[" & $frameDepth & "]; ")
     if preventStackTrace notin m.flags:
       var procname = makeCString(m.module.name.s)
       add(prc, initFrame(m.initProc, procname, m.module.info.quotedFilename))
