@@ -121,7 +121,7 @@ proc considerOverloadedOp(c: var TLiftCtx; t: PType; body, x, y: PNode): bool =
           return false
       else:
         op = t.assignment
-        if op == nil:
+        if op.isNil:
           op = liftBody(c.c, t, c.info)
       markUsed(c.info, op)
       styleCheckUse(c.info, op)

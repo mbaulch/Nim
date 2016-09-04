@@ -143,7 +143,7 @@ proc addField*(obj: PType; s: PSym) =
 
 proc addUniqueField*(obj: PType; s: PSym) =
   let fieldName = getIdent(s.name.s & $s.id)
-  if lookupInRecord(obj.n, fieldName) == nil:
+  if lookupInRecord(obj.n, fieldName).isNil:
     var field = newSym(skField, fieldName, s.owner, s.info)
     let t = skipIntLit(s.typ)
     field.typ = t
@@ -171,9 +171,9 @@ proc indirectAccess*(a: PNode, b: string, info: TLineInfo): PNode =
     field = getSymFromList(t.n, bb)
     if field != nil: break
     t = t.sons[0]
-    if t == nil: break
+    if t.isNil: break
     t = t.skipTypes(skipPtrs)
-  #if field == nil:
+  #if field.isNil:
   #  echo "FIELD ", b
   #  debug deref.typ
   internalAssert field != nil
@@ -192,7 +192,7 @@ proc getFieldFromObj*(t: PType; v: PSym): PSym =
     result = getSymFromList(t.n, fieldName)
     if result != nil: break
     t = t.sons[0]
-    if t == nil: break
+    if t.isNil: break
     t = t.skipTypes(skipPtrs)
 
 proc indirectAccess*(a: PNode, b: PSym, info: TLineInfo): PNode =
@@ -217,7 +217,7 @@ proc callCodegenProc*(name: string, arg1: PNode;
                       arg2, arg3, optionalArgs: PNode = nil): PNode =
   result = newNodeI(nkCall, arg1.info)
   let sym = magicsys.getCompilerProc(name)
-  if sym == nil:
+  if sym.isNil:
     localError(arg1.info, errSystemNeeds, name)
   else:
     result.add newSymNode(sym)
@@ -360,7 +360,7 @@ proc createWrapperProc(f: PNode; threadParam, argsParam: PSym;
       incRefCall.sons[1] = indirectAccess(threadLocalProm.newSymNode,
                                           "data", fv.info)
       body.add incRefCall
-    if barrier == nil:
+    if barrier.isNil:
       # by now 'fv' is shared and thus might have beeen overwritten! we need
       # to use the thread-local view instead:
       body.add callCodegenProc("nimFlowVarSignal", threadLocalProm.newSymNode)
@@ -538,13 +538,13 @@ proc wrapProcForSpawn*(owner: PSym; spawnExpr: PNode; retType: PType;
   let spawnKind = spawnResult(retType, barrier!=nil)
   case spawnKind
   of srVoid:
-    internalAssert dest == nil
+    internalAssert dest.isNil
     result = newNodeI(nkStmtList, n.info)
   of srFlowVar:
-    internalAssert dest == nil
+    internalAssert dest.isNil
     result = newNodeIT(nkStmtListExpr, n.info, retType)
   of srByVar:
-    if dest == nil: localError(n.info, "'spawn' must not be discarded")
+    if dest.isNil: localError(n.info, "'spawn' must not be discarded")
     result = newNodeI(nkStmtList, n.info)
 
   if n.kind notin nkCallKinds:
@@ -623,7 +623,7 @@ proc wrapProcForSpawn*(owner: PSym; spawnExpr: PNode; retType: PType;
     fvAsExpr = indirectAccess(castExpr, field, n.info)
     # create flowVar:
     result.add newFastAsgnStmt(fvField, callProc(spawnExpr[^1]))
-    if barrier == nil:
+    if barrier.isNil:
       result.add callCodegenProc("nimFlowVarCreateSemaphore", fvField)
 
   elif spawnKind == srByVar:

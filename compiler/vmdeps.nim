@@ -78,7 +78,7 @@ proc mapTypeToBracketX(name: string; m: TMagic; t: PType; info: TLineInfo;
   result = newNodeIT(nkBracketExpr, if t.n.isNil: info else: t.n.info, t)
   result.add atomicTypeX(name, m, t, info)
   for i in 0 .. < t.len:
-    if t.sons[i] == nil:
+    if t.sons[i].isNil:
       let void = atomicTypeX("void", mVoid, t, info)
       void.typ = newType(tyVoid, t.owner)
       result.add void
@@ -174,7 +174,7 @@ proc mapTypeToAstX(t: PType; info: TLineInfo;
       result = newNodeX(nkDistinctTy)
       result.add mapTypeToAst(t.sons[0], info)
     else:
-      if allowRecursion or t.sym == nil:
+      if allowRecursion or t.sym.isNil:
         result = mapTypeToBracket("distinct", mDistinct, t, info)
       else:
         result = atomicType(t.sym.name.s, t.sym.magic)
@@ -184,7 +184,7 @@ proc mapTypeToAstX(t: PType; info: TLineInfo;
     if inst:
       result = newNodeX(nkObjectTy)
       result.add ast.emptyNode  # pragmas not reconstructed yet
-      if t.sons[0] == nil: result.add ast.emptyNode  # handle parent object
+      if t.sons[0].isNil: result.add ast.emptyNode  # handle parent object
       else:
         var nn = newNodeX(nkOfInherit)
         nn.add mapTypeToAst(t.sons[0], info)
@@ -194,10 +194,10 @@ proc mapTypeToAstX(t: PType; info: TLineInfo;
       else:
         result.add ast.emptyNode
     else:
-      if allowRecursion or t.sym == nil:
+      if allowRecursion or t.sym.isNil:
         result = newNodeIT(nkObjectTy, if t.n.isNil: info else: t.n.info, t)
         result.add ast.emptyNode
-        if t.sons[0] == nil:
+        if t.sons[0].isNil:
           result.add ast.emptyNode
         else:
           result.add mapTypeToAst(t.sons[0], info)
@@ -233,7 +233,7 @@ proc mapTypeToAstX(t: PType; info: TLineInfo;
     if inst:
       result = newNodeX(nkProcTy)
       var fp = newNodeX(nkFormalParams)
-      if t.sons[0] == nil:
+      if t.sons[0].isNil:
         fp.add ast.emptyNode
       else:
         fp.add mapTypeToAst(t.sons[0], t.n[0].info)

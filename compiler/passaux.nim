@@ -31,7 +31,7 @@ const verbosePass* = makePass(open = verboseOpen, process = verboseProcess)
 proc cleanUp(c: PPassContext, n: PNode): PNode =
   result = n
   # we cannot clean up if dead code elimination is activated
-  if optDeadCodeElim in gGlobalOptions or n == nil: return
+  if optDeadCodeElim in gGlobalOptions or n.isNil: return
   case n.kind
   of nkStmtList:
     for i in countup(0, sonsLen(n) - 1): discard cleanUp(c, n.sons[i])

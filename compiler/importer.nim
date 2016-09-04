@@ -99,7 +99,7 @@ proc rawImportSymbol(c: PContext, s: PSym) =
 proc importSymbol(c: PContext, n: PNode, fromMod: PSym) =
   let ident = lookups.considerQuotedIdent(n)
   let s = strTableGet(fromMod.tab, ident)
-  if s == nil:
+  if s.isNil:
     localError(n.info, errUndeclaredIdentifier, ident.s)
   else:
     if s.kind == skStub: loadStub(s)

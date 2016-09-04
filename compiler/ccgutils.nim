@@ -85,7 +85,7 @@ proc slowSearch(key: PType; k: TTypeKind): PType =
 
 proc getUniqueType*(key: PType): PType =
   # this is a hotspot in the compiler!
-  if key == nil: return
+  if key.isNil: return
   var k = key.kind
   case k
   of tyBool, tyChar, tyInt..tyUInt64:
@@ -95,7 +95,7 @@ proc getUniqueType*(key: PType): PType =
   of  tyEmpty, tyNil, tyExpr, tyStmt, tyPointer, tyString,
       tyCString, tyNone, tyBigNum, tyVoid:
     result = gCanonicalTypes[k]
-    if result == nil:
+    if result.isNil:
       gCanonicalTypes[k] = key
       result = key
   of tyTypeDesc, tyTypeClasses, tyGenericParam, tyFromExpr, tyFieldAccessor:
@@ -130,7 +130,7 @@ proc getUniqueType*(key: PType): PType =
     if tfFromGeneric notin key.flags:
       # fast case; lookup per id suffices:
       result = PType(idTableGet(gTypeTable[k], key))
-      if result == nil:
+      if result.isNil:
         idTablePut(gTypeTable[k], key, key)
         result = key
     else:
@@ -144,7 +144,7 @@ proc getUniqueType*(key: PType): PType =
       result = key
   of tyEnum:
     result = PType(idTableGet(gTypeTable[k], key))
-    if result == nil:
+    if result.isNil:
       idTablePut(gTypeTable[k], key, key)
       result = key
   of tyProc:
@@ -157,7 +157,7 @@ proc getUniqueType*(key: PType): PType =
 proc tableGetType*(tab: TIdTable, key: PType): RootRef =
   # returns nil if we need to declare this type
   result = idTableGet(tab, key)
-  if (result == nil) and (tab.counter > 0):
+  if (result.isNil) and (tab.counter > 0):
     # we have to do a slow linear search because types may need
     # to be compared by their structure:
     for h in countup(0, high(tab.data)):

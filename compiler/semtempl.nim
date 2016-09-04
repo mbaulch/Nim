@@ -597,7 +597,7 @@ proc semTemplateDef(c: PContext, n: PNode): PNode =
   if n.sons[bodyPos].kind == nkEmpty:
     localError(n.info, errImplOfXexpected, s.name.s)
   var proto = searchForProc(c, c.currentScope, s)
-  if proto == nil:
+  if proto.isNil:
     addInterfaceOverloadableSymAt(c, c.currentScope, s)
   else:
     symTabReplace(c.currentScope.symbols, proto, s)

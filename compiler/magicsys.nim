@@ -22,7 +22,7 @@ var
 proc nilOrSysInt*: PType = gSysTypes[tyInt]
 
 proc registerSysType*(t: PType) =
-  if gSysTypes[t.kind] == nil: gSysTypes[t.kind] = t
+  if gSysTypes[t.kind].isNil: gSysTypes[t.kind] = t
 
 proc newSysType(kind: TTypeKind, size: int): PType =
   result = newType(kind, systemModule)
@@ -31,7 +31,7 @@ proc newSysType(kind: TTypeKind, size: int): PType =
 
 proc getSysSym*(name: string): PSym =
   result = strTableGet(systemModule.tab, getIdent(name))
-  if result == nil:
+  if result.isNil:
     rawMessage(errSystemNeeds, name)
     result = newSym(skError, getIdent(name), systemModule, systemModule.info)
     result.typ = newType(tyError, systemModule)
@@ -59,7 +59,7 @@ proc sysTypeFromName*(name: string): PType =
 
 proc getSysType*(kind: TTypeKind): PType =
   result = gSysTypes[kind]
-  if result == nil:
+  if result.isNil:
     case kind
     of tyInt: result = sysTypeFromName("int")
     of tyInt8: result = sysTypeFromName("int8")
@@ -85,7 +85,7 @@ proc getSysType*(kind: TTypeKind): PType =
     gSysTypes[kind] = result
   if result.kind != kind:
     internalError("wanted: " & $kind & " got: " & $result.kind)
-  if result == nil: internalError("type not found: " & $kind)
+  if result.isNil: internalError("type not found: " & $kind)
 
 var
   intTypeCache: array[-5..64, PType]
@@ -105,7 +105,7 @@ proc getIntLitType*(literal: PNode): PType =
   let value = literal.intVal
   if value >= low(intTypeCache) and value <= high(intTypeCache):
     result = intTypeCache[value.int]
-    if result == nil:
+    if result.isNil:
       let ti = getSysType(tyInt)
       result = copyType(ti, ti.owner, false)
       result.n = literal
@@ -163,7 +163,7 @@ proc setIntLitType*(result: PNode) =
 proc getCompilerProc*(name: string): PSym =
   let ident = getIdent(name)
   result = strTableGet(compilerprocs, ident)
-  if result == nil:
+  if result.isNil:
     result = strTableGet(rodCompilerprocs, ident)
     if result != nil:
       strTableAdd(compilerprocs, result)
@@ -176,7 +176,7 @@ proc registerCompilerProc*(s: PSym) =
 proc registerNimScriptSymbol*(s: PSym) =
   # Nimscript symbols must be al unique:
   let conflict = strTableGet(exposed, s.name)
-  if conflict == nil:
+  if conflict.isNil:
     strTableAdd(exposed, s)
   else:
     localError(s.info, "symbol conflicts with other .exportNims symbol at: " &

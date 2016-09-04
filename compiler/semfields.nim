@@ -106,7 +106,7 @@ proc semForFields(c: PContext, n: PNode, m: TMagic): PNode =
   # a 'while true: stmt; break' loop ...
   result = newNodeI(nkWhileStmt, n.info, 2)
   var trueSymbol = strTableGet(magicsys.systemModule.tab, getIdent"true")
-  if trueSymbol == nil:
+  if trueSymbol.isNil:
     localError(n.info, errSystemNeeds, "true")
     trueSymbol = newSym(skUnknown, getIdent"true", getCurrOwner(), n.info)
     trueSymbol.typ = getSysType(tyBool)
@@ -151,7 +151,7 @@ proc semForFields(c: PContext, n: PNode, m: TMagic): PNode =
     var t = tupleTypeA
     while t.kind == tyObject:
       semForObjectFields(fc, t.n, n, stmts)
-      if t.sons[0] == nil: break
+      if t.sons[0].isNil: break
       t = skipTypes(t.sons[0], skipPtrs)
   dec(c.p.nestedLoopCounter)
   # for TR macros this 'while true: ...; break' loop is pretty bad, so

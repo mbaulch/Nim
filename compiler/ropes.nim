@@ -83,7 +83,7 @@ var errorHandler*: proc(err: RopesError, msg: string, useWarning = false)
 
 proc len*(a: Rope): int =
   ## the rope's length
-  if a == nil: result = 0
+  if a.isNil: result = 0
   else: result = a.length
 
 proc newRope(data: string = nil): Rope =
@@ -109,7 +109,7 @@ proc resetRopeCache* =
     cache[i] = nil
 
 proc ropeInvariant(r: Rope): bool =
-  if r == nil:
+  if r.isNil:
     result = true
   else:
     result = true #
@@ -152,9 +152,9 @@ proc rope*(f: BiggestFloat): Rope =
   result = rope($f)
 
 proc `&`*(a, b: Rope): Rope =
-  if a == nil:
+  if a.isNil:
     result = b
-  elif b == nil:
+  elif b.isNil:
     result = a
   else:
     result = newRope()

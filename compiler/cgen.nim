@@ -55,7 +55,7 @@ proc fillLoc(a: var TLoc, k: TLocKind, typ: PType, r: Rope, s: TStorageLoc) =
     a.k = k
     a.t = typ
     a.s = s
-    if a.r == nil: a.r = r
+    if a.r.isNil: a.r = r
 
 proc isSimpleConst(typ: PType): bool =
   let t = skipTypes(typ, abstractVar)
@@ -193,13 +193,13 @@ proc genLineDir(p: BProc, t: PNode) =
     add(p.s(cpsStmts), ~"//" & t.info.sourceLine & rnl)
   genCLineDir(p.s(cpsStmts), t.info.toFullPath, line)
   if ({optStackTrace, optEndb} * p.options == {optStackTrace, optEndb}) and
-      (p.prc == nil or sfPure notin p.prc.flags):
+      (p.prc.isNil or sfPure notin p.prc.flags):
     if freshLineInfo(p, t.info):
       linefmt(p, cpsStmts, "#endb($1, $2);$n",
               line.rope, makeCString(toFilename(t.info)))
   elif ({optLineTrace, optStackTrace} * p.options ==
       {optLineTrace, optStackTrace}) and
-      (p.prc == nil or sfPure notin p.prc.flags) and t.info.fileIndex >= 0:
+      (p.prc.isNil or sfPure notin p.prc.flags) and t.info.fileIndex >= 0:
     if freshLineInfo(p, t.info):
       linefmt(p, cpsStmts, "nimln($1, $2);$n",
               line.rope, t.info.quotedFilename)
@@ -472,7 +472,7 @@ proc loadDynamicLib(m: BModule, lib: PLib) =
   if not lib.generated:
     lib.generated = true
     var tmp = getTempName(m)
-    assert(lib.name == nil)
+    assert(lib.name.isNil)
     lib.name = tmp # BUGFIX: cgsym has awful side-effects
     addf(m.s[cfsVars], "static void* $1;$n", [tmp])
     if lib.path.kind in {nkStrLit..nkTripleStrLit}:
@@ -500,7 +500,7 @@ proc loadDynamicLib(m: BModule, lib: PLib) =
            "if (!($1 = #nimLoadLibrary($2))) #nimLoadLibraryError($2);$n",
            [tmp, rdLoc(dest)])
 
-  if lib.name == nil: internalError("loadDynamicLib")
+  if lib.name.isNil: internalError("loadDynamicLib")
 
 proc mangleDynLibProc(sym: PSym): Rope =
   if sfCompilerProc in sym.flags:
@@ -1130,7 +1130,7 @@ proc rawNewModule(module: PSym): BModule =
 
 proc newModule(module: PSym): BModule =
   # we should create only one cgen module for each module sym
-  internalAssert getCgenModule(module) == nil
+  internalAssert getCgenModule(module).isNil
 
   result = rawNewModule(module)
   growCache gModules, module.position
@@ -1142,7 +1142,7 @@ proc newModule(module: PSym): BModule =
 
 proc myOpen(module: PSym): PPassContext =
   result = newModule(module)
-  if optGenIndex in gGlobalOptions and generatedHeader == nil:
+  if optGenIndex in gGlobalOptions and generatedHeader.isNil:
     let f = if headerFile.len > 0: headerFile else: gProjectFull
     generatedHeader = rawNewModule(module,
       changeFileExt(completeCFilePath(f), hExt))
@@ -1183,7 +1183,7 @@ proc myOpenCached(module: PSym, rd: PRodReader): PPassContext =
 
 proc myProcess(b: PPassContext, n: PNode): PNode =
   result = n
-  if b == nil or passes.skipCodegen(n): return
+  if b.isNil or passes.skipCodegen(n): return
   var m = BModule(b)
   m.initProc.options = initProcOptions(m)
   genStmts(m.initProc, n)
@@ -1269,7 +1269,7 @@ proc updateCachedModule(m: BModule) =
 
 proc myClose(b: PPassContext, n: PNode): PNode =
   result = n
-  if b == nil or passes.skipCodegen(n): return
+  if b.isNil or passes.skipCodegen(n): return
   var m = BModule(b)
   if n != nil:
     m.initProc.options = initProcOptions(m)

@@ -130,9 +130,9 @@ proc guardDotAccess(a: PEffects; n: PNode) =
         field = lookupInRecord(ty.n, g.name)
         if field != nil: break
         ty = ty.sons[0]
-        if ty == nil: break
+        if ty.isNil: break
         ty = ty.skipTypes(skipPtrs)
-    if field == nil:
+    if field.isNil:
       localError(n.info, errGenerated, "invalid guard field: " & g.name.s)
       return
     g = field
@@ -256,7 +256,7 @@ proc addToIntersection(inter: var TIntersection, s: int) =
   inter.add((id: s, count: 1))
 
 proc throws(tracked, n: PNode) =
-  if n.typ == nil or n.typ.kind != tyError: tracked.add n
+  if n.typ.isNil or n.typ.kind != tyError: tracked.add n
 
 proc getEbase(): PType =
   result = if getCompilerProc("Exception") != nil: sysTypeFromName"Exception"
@@ -386,7 +386,7 @@ proc isIndirectCall(n: PNode, owner: PSym): bool =
   if n.kind != nkSym:
     result = true
   elif n.sym.kind == skParam:
-    result = owner != n.sym.owner or owner == nil
+    result = owner != n.sym.owner or owner.isNil
   elif n.sym.kind notin routineKinds:
     result = true
 

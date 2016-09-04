@@ -466,7 +466,7 @@ proc semVarOrLet(c: PContext, n: PNode, symkind: TSymKind): PNode =
       if symkind == skLet: localError(a.info, errLetNeedsInit)
 
     # this can only happen for errornous var statements:
-    if typ == nil: continue
+    if typ.isNil: continue
     typeAllowedCheck(a.info, typ, symkind)
     var tup = skipTypes(typ, {tyGenericInst})
     if a.kind == nkVarTuple:
@@ -536,7 +536,7 @@ proc semConst(c: PContext, n: PNode): PNode =
     if a.sons[1].kind != nkEmpty: typ = semTypeNode(c, a.sons[1], nil)
 
     var def = semConstExpr(c, a.sons[2])
-    if def == nil:
+    if def.isNil:
       localError(a.sons[2].info, errConstExprExpected)
       continue
     # check type compatibility between def.typ and typ:
@@ -544,7 +544,7 @@ proc semConst(c: PContext, n: PNode): PNode =
       def = fitRemoveHiddenConv(c, typ, def)
     else:
       typ = def.typ
-    if typ == nil:
+    if typ.isNil:
       localError(a.sons[2].info, errConstExprExpected)
       continue
     if typeAllowed(typ, skConst) != nil and def.kind != nkNilLit:
@@ -740,7 +740,7 @@ proc typeSectionRightSidePass(c: PContext, n: PNode) =
       # process the type's body:
       pushOwner(s)
       var t = semTypeNode(c, a.sons[2], s.typ)
-      if s.typ == nil:
+      if s.typ.isNil:
         s.typ = t
       elif t != s.typ:
         # this can happen for e.g. tcan_alias_specialised_generic:
@@ -755,7 +755,7 @@ proc typeSectionRightSidePass(c: PContext, n: PNode) =
       var st = s.typ
       if st.kind == tyGenericBody: st = st.lastSon
       internalAssert st.kind in {tyPtr, tyRef}
-      internalAssert st.lastSon.sym == nil
+      internalAssert st.lastSon.sym.isNil
       st.lastSon.sym = newSym(skType, getIdent(s.name.s & ":ObjectType"),
                               getCurrOwner(), s.info)
 
@@ -911,12 +911,12 @@ proc lookupMacro(c: PContext, n: PNode): PSym =
 proc semProcAnnotation(c: PContext, prc: PNode;
                        validPragmas: TSpecialWords): PNode =
   var n = prc.sons[pragmasPos]
-  if n == nil or n.kind == nkEmpty: return
+  if n.isNil or n.kind == nkEmpty: return
   for i in countup(0, <n.len):
     var it = n.sons[i]
     var key = if it.kind == nkExprColonExpr: it.sons[0] else: it
     let m = lookupMacro(c, key)
-    if m == nil:
+    if m.isNil:
       if key.kind == nkIdent and key.ident.id == ord(wDelegator):
         if considerQuotedIdent(prc.sons[namePos]).s == "()":
           prc.sons[namePos] = newIdentNode(idDelegator, prc.info)
@@ -1111,7 +1111,7 @@ proc semOverride(c: PContext, s: PSym, n: PNode) =
     if s.magic == mAsgn: return
     incl(s.flags, sfUsed)
     let t = s.typ
-    if t.len == 3 and t.sons[0] == nil and t.sons[1].kind == tyVar:
+    if t.len == 3 and t.sons[0].isNil and t.sons[1].kind == tyVar:
       var obj = t.sons[1].sons[0]
       while true:
         incl(obj.flags, tfHasAsgn)
@@ -1174,7 +1174,7 @@ proc semProcAux(c: PContext, n: PNode, kind: TSymKind,
   else:
     s = n[namePos].sym
     s.owner = getCurrOwner()
-    typeIsDetermined = s.typ == nil
+    typeIsDetermined = s.typ.isNil
     s.ast = n
     #s.scope = c.currentScope
 
@@ -1207,7 +1207,7 @@ proc semProcAux(c: PContext, n: PNode, kind: TSymKind,
     s.typ.flags.incl(tfIterator)
 
   var proto = searchForProc(c, oldScope, s)
-  if proto == nil or isAnon:
+  if proto.isNil or isAnon:
     if s.kind == skIterator:
       if s.typ.callConv != ccClosure:
         s.typ.callConv = if isAnon: ccClosure else: ccInline
@@ -1317,7 +1317,7 @@ proc semIterator(c: PContext, n: PNode): PNode =
   result = semProcAux(c, n, skIterator, iteratorPragmas)
   var s = result.sons[namePos].sym
   var t = s.typ
-  if t.sons[0] == nil and s.typ.callConv != ccClosure:
+  if t.sons[0].isNil and s.typ.callConv != ccClosure:
     localError(n.info, errXNeedsReturnType, "iterator")
   if isAnon and s.typ.callConv == ccInline:
     localError(n.info, "inline iterators are not first-class / cannot be assigned to variables")
@@ -1386,7 +1386,7 @@ proc semConverterDef(c: PContext, n: PNode): PNode =
   if namePos >= result.safeLen: return result
   var s = result.sons[namePos].sym
   var t = s.typ
-  if t.sons[0] == nil: localError(n.info, errXNeedsReturnType, "converter")
+  if t.sons[0].isNil: localError(n.info, errXNeedsReturnType, "converter")
   if sonsLen(t) != 2: localError(n.info, errXRequiresOneArgument, "converter")
   addConverter(c, s)
 
@@ -1402,7 +1402,7 @@ proc semMacroDef(c: PContext, n: PNode): PNode =
     let param = t.n.sons[i].sym
     if param.typ.kind != tyExpr: allUntyped = false
   if allUntyped: incl(s.flags, sfAllUntyped)
-  if t.sons[0] == nil: localError(n.info, errXNeedsReturnType, "macro")
+  if t.sons[0].isNil: localError(n.info, errXNeedsReturnType, "macro")
   if n.sons[bodyPos].kind == nkEmpty:
     localError(n.info, errImplOfXexpected, s.name.s)
 

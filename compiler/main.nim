@@ -142,7 +142,7 @@ proc evalNim(nodes: PNode, module: PSym) =
   carryPasses(nodes, module, evalPasses)
 
 proc commandEval(exp: string) =
-  if systemModule == nil:
+  if systemModule.isNil:
     interactivePasses()
     compileSystemModule()
   var echoExp = "echo \"eval\\t\", " & "repr(" & exp & ")"

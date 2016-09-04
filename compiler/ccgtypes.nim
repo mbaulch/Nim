@@ -38,7 +38,7 @@ proc hashOwner(s: PSym): FilenameHash =
 
 proc mangleName(s: PSym): Rope =
   result = s.loc.r
-  if result == nil:
+  if result.isNil:
     let keepOrigName = s.kind in skLocalVars - {skForVar} and
       {sfFromGeneric, sfGlobal, sfShadowed, sfGenSym} * s.flags == {} and
       not isKeyword(s.name)
@@ -99,10 +99,10 @@ proc getTypeName(typ: PType): Rope =
   if typ.sym != nil and {sfImportc, sfExportc} * typ.sym.flags != {}:
     result = typ.sym.loc.r
   else:
-    if typ.loc.r == nil:
+    if typ.loc.r.isNil:
       typ.loc.r = typ.typeName & typ.id.rope
     result = typ.loc.r
-  if result == nil: internalError("getTypeName: " & $typ.kind)
+  if result.isNil: internalError("getTypeName: " & $typ.kind)
 
 proc mapSetType(typ: PType): TCTypeKind =
   case int(getSize(typ))
@@ -173,14 +173,14 @@ proc needsComplexAssignment(typ: PType): bool =
 
 proc isObjLackingTypeField(typ: PType): bool {.inline.} =
   result = (typ.kind == tyObject) and ((tfFinal in typ.flags) and
-      (typ.sons[0] == nil) or isPureObject(typ))
+      (typ.sons[0].isNil) or isPureObject(typ))
 
 proc isInvalidReturnType(rettype: PType): bool =
   # Arrays and sets cannot be returned by a C procedure, because C is
   # such a poor programming language.
   # We exclude records with refs too. This enhances efficiency and
   # is necessary for proper code generation of assignments.
-  if rettype == nil: result = true
+  if rettype.isNil: result = true
   else:
     case mapType(rettype)
     of ctArray:
@@ -219,7 +219,7 @@ proc ccgIntroducedPtr(s: PSym): bool =
   of tyObject:
     if (optByRef in s.options) or (getSize(pt) > platform.floatSize * 2):
       result = true           # requested anyway
-    elif (tfFinal in pt.flags) and (pt.sons[0] == nil):
+    elif (tfFinal in pt.flags) and (pt.sons[0].isNil):
       result = false          # no need, because no subtyping possible
     else:
       result = true           # ordinary objects are always passed by reference,
@@ -271,10 +271,10 @@ proc pushType(m: BModule, typ: PType) =
   add(m.typeStack, typ)
 
 proc getTypePre(m: BModule, typ: PType): Rope =
-  if typ == nil: result = rope("void")
+  if typ.isNil: result = rope("void")
   else:
     result = getSimpleTypeDesc(m, typ)
-    if result == nil: result = cacheGetType(m.typeCache, typ)
+    if result.isNil: result = cacheGetType(m.typeCache, typ)
 
 proc structOrUnion(t: PType): Rope =
   (if tfUnion in t.flags: rope("union") else: rope("struct"))
@@ -327,7 +327,7 @@ proc genProcParams(m: BModule, t: PType, rettype, params: var Rope,
                    check: var IntSet, declareEnvironment=true;
                    weakDep=false) =
   params = nil
-  if t.sons[0] == nil or isInvalidReturnType(t.sons[0]):
+  if t.sons[0].isNil or isInvalidReturnType(t.sons[0]):
     rettype = ~"void"
   else:
     rettype = getTypeDescAux(m, t.sons[0], check)
@@ -375,7 +375,7 @@ proc genProcParams(m: BModule, t: PType, rettype, params: var Rope,
   if tfVarargs in t.flags:
     if params != nil: add(params, ", ")
     add(params, "...")
-  if params == nil: add(params, "void)")
+  if params.isNil: add(params, "void)")
   else: add(params, ")")
   params = "(" & params
 
@@ -385,7 +385,7 @@ proc mangleRecFieldName(field: PSym, rectype: PType): Rope =
     result = field.loc.r
   else:
     result = rope(mangleField(field.name))
-  if result == nil: internalError(field.info, "mangleRecFieldName")
+  if result.isNil: internalError(field.info, "mangleRecFieldName")
 
 proc genRecordFieldsAux(m: BModule, n: PNode,
                         accessExpr: Rope, rectype: PType,
@@ -426,7 +426,7 @@ proc genRecordFieldsAux(m: BModule, n: PNode,
   of nkSym:
     field = n.sym
     if field.typ.kind == tyVoid: return
-    #assert(field.ast == nil)
+    #assert(field.ast.isNil)
     sname = mangleRecFieldName(field, rectype)
     if accessExpr != nil: ae = "$1.$2" % [accessExpr, sname]
     else: ae = sname
@@ -467,7 +467,7 @@ proc getRecordDesc(m: BModule, typ: PType, name: Rope,
 
   if typ.kind == tyObject:
 
-    if typ.sons[0] == nil:
+    if typ.sons[0].isNil:
       if (typ.sym != nil and sfPure in typ.sym.flags) or tfFinal in typ.flags:
         appcg(m, result, " {$n", [])
       else:
@@ -485,7 +485,7 @@ proc getRecordDesc(m: BModule, typ: PType, name: Rope,
     addf(result, " {$n", [name])
 
   let desc = getRecordFields(m, typ, check)
-  if desc == nil and not hasField:
+  if desc.isNil and not hasField:
     addf(result, "char dummy;$n", [])
   else:
     add(result, desc)
@@ -498,7 +498,7 @@ proc getTupleDesc(m: BModule, typ: PType, name: Rope,
   for i in countup(0, sonsLen(typ) - 1):
     addf(desc, "$1 Field$2;$n",
          [getTypeDescAux(m, typ.sons[i], check), rope(i)])
-  if desc == nil: add(result, "char dummy;" & tnl)
+  if desc.isNil: add(result, "char dummy;" & tnl)
   else: add(result, desc)
   add(result, "};" & tnl)
 
@@ -532,7 +532,7 @@ proc resolveStarsInCppType(typ: PType, idx, stars: int): PType =
 proc getTypeDescAux(m: BModule, typ: PType, check: var IntSet): Rope =
   # returns only the type's name
   var t = getUniqueType(typ)
-  if t == nil: internalError("getTypeDescAux: t == nil")
+  if t.isNil: internalError("getTypeDescAux: t.isNil")
   if t.sym != nil: useHeader(m, t.sym)
   result = getTypePre(m, t)
   if result != nil: return
@@ -582,7 +582,7 @@ proc getTypeDescAux(m: BModule, typ: PType, check: var IntSet): Rope =
   of tyRange, tyEnum:
     let t = if t.kind == tyRange: t.lastSon else: t
     result = cacheGetType(m.typeCache, t)
-    if result == nil:
+    if result.isNil:
       result = getTypeName(t)
       if not (isImportedCppType(t) or
           (sfImportc in t.sym.flags and t.sym.magic == mNone)):
@@ -626,13 +626,13 @@ proc getTypeDescAux(m: BModule, typ: PType, check: var IntSet): Rope =
     # we cannot use getTypeForward here because then t would be associated
     # with the name of the struct, not with the pointer to the struct:
     result = cacheGetType(m.forwTypeCache, t)
-    if result == nil:
+    if result.isNil:
       result = getTypeName(t)
       if not isImportedType(t):
         addf(m.s[cfsForwardTypes], getForwardStructFormat(m),
             [structOrUnion(t), result])
       idTablePut(m.forwTypeCache, t, result)
-    assert(cacheGetType(m.typeCache, t) == nil)
+    assert(cacheGetType(m.typeCache, t).isNil)
     idTablePut(m.typeCache, t, result & "*")
     if not isImportedType(t):
       if skipTypes(t.sons[0], typedescInst).kind != tyEmpty:
@@ -672,7 +672,7 @@ proc getTypeDescAux(m: BModule, typ: PType, check: var IntSet): Rope =
             chunkStart = i
 
             let typeInSlot = resolveStarsInCppType(typ, idx + 1, stars)
-            if typeInSlot == nil or typeInSlot.kind == tyVoid:
+            if typeInSlot.isNil or typeInSlot.kind == tyVoid:
               result.add(~"void")
             else:
               result.add getTypeDescAux(m, typeInSlot, check)
@@ -692,7 +692,7 @@ proc getTypeDescAux(m: BModule, typ: PType, check: var IntSet): Rope =
       discard getRecordDesc(m, t, result, check)
     else:
       result = cacheGetType(m.forwTypeCache, t)
-      if result == nil:
+      if result.isNil:
         result = getTypeName(t)
         if not isImportedType(t):
           addf(m.s[cfsForwardTypes], getForwardStructFormat(m),
@@ -822,9 +822,9 @@ proc genTypeInfoAux(m: BModule, typ, origType: PType, name: Rope) =
 proc discriminatorTableName(m: BModule, objtype: PType, d: PSym): Rope =
   # bugfix: we need to search the type that contains the discriminator:
   var objtype = objtype
-  while lookupInRecord(objtype.n, d.name) == nil:
+  while lookupInRecord(objtype.n, d.name).isNil:
     objtype = objtype.sons[0]
-  if objtype.sym == nil:
+  if objtype.sym.isNil:
     internalError(d.info, "anonymous obj with discriminator")
   result = "NimDT_$1_$2" % [rope(objtype.id), rope(d.name.s.mangle)]
 
@@ -947,7 +947,7 @@ proc genEnumInfo(m: BModule, typ: PType, name: Rope) =
     assert(typ.n.sons[i].kind == nkSym)
     var field = typ.n.sons[i].sym
     var elemNode = getNimNode(m)
-    if field.ast == nil:
+    if field.ast.isNil:
       # no explicit string literal for the enum field, so use field.name:
       add(enumNames, makeCString(field.name.s))
     else:

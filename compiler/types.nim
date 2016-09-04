@@ -90,7 +90,7 @@ proc analyseObjectWithTypeField*(t: PType): TTypeFieldResult
   # at all in this type.
 
 proc invalidGenericInst(f: PType): bool =
-  result = f.kind == tyGenericInst and lastSon(f) == nil
+  result = f.kind == tyGenericInst and lastSon(f).isNil
 
 proc isPureObject(typ: PType): bool =
   var t = typ
@@ -177,7 +177,7 @@ proc iterOverNode(marker: var IntSet, n: PNode, iter: TTypeIter,
 proc iterOverTypeAux(marker: var IntSet, t: PType, iter: TTypeIter,
                      closure: RootRef): bool =
   result = false
-  if t == nil: return
+  if t.isNil: return
   result = iter(t, closure)
   if result: return
   if not containsOrIncl(marker, t.id):
@@ -223,7 +223,7 @@ proc searchTypeForAux(t: PType, predicate: TTypePredicate,
                       marker: var IntSet): bool =
   # iterates over VALUE types!
   result = false
-  if t == nil: return
+  if t.isNil: return
   if containsOrIncl(marker, t.id): return
   result = predicate(t)
   if result: return
@@ -252,7 +252,7 @@ proc containsObject(t: PType): bool =
   result = searchTypeFor(t, isObjectPredicate)
 
 proc isObjectWithTypeFieldPredicate(t: PType): bool =
-  result = t.kind == tyObject and t.sons[0] == nil and
+  result = t.kind == tyObject and t.sons[0].isNil and
       not (t.sym != nil and {sfPure, sfInfixCall} * t.sym.flags != {}) and
       tfFinal notin t.flags
 
@@ -260,7 +260,7 @@ proc analyseObjectWithTypeFieldAux(t: PType,
                                    marker: var IntSet): TTypeFieldResult =
   var res: TTypeFieldResult
   result = frNone
-  if t == nil: return
+  if t.isNil: return
   case t.kind
   of tyObject:
     if (t.n != nil):
@@ -329,7 +329,7 @@ proc canFormAcycleNode(marker: var IntSet, n: PNode, startId: int): bool =
 
 proc canFormAcycleAux(marker: var IntSet, typ: PType, startId: int): bool =
   result = false
-  if typ == nil: return
+  if typ.isNil: return
   if tfAcyclic in typ.flags: return
   var t = skipTypes(typ, abstractInst-{tyTypeDesc})
   if tfAcyclic in t.flags: return
@@ -375,7 +375,7 @@ proc mutateNode(marker: var IntSet, n: PNode, iter: TTypeMutator,
 proc mutateTypeAux(marker: var IntSet, t: PType, iter: TTypeMutator,
                    closure: RootRef): PType =
   result = nil
-  if t == nil: return
+  if t.isNil: return
   result = iter(t, closure)
   if not containsOrIncl(marker, t.id):
     for i in countup(0, sonsLen(t) - 1):
@@ -423,7 +423,7 @@ proc addTypeFlags(name: var string, typ: PType) {.inline.} =
 proc typeToString(typ: PType, prefer: TPreferedDesc = preferName): string =
   var t = typ
   result = ""
-  if t == nil: return
+  if t.isNil: return
   if prefer in preferToResolveSymbols and t.sym != nil and
        sfAnon notin t.sym.flags:
     if t.kind == tyInt and isIntLit(t):
@@ -707,7 +707,7 @@ proc sameTypeOrNilAux(a, b: PType, c: var TSameTypeClosure): bool =
   if a == b:
     result = true
   else:
-    if a == nil or b == nil: result = false
+    if a.isNil or b.isNil: result = false
     else: result = sameTypeAux(a, b, c)
 
 proc sameType*(a, b: PType, flags: TTypeCmpFlags = {}): bool =
@@ -719,7 +719,7 @@ proc sameTypeOrNil*(a, b: PType, flags: TTypeCmpFlags = {}): bool =
   if a == b:
     result = true
   else:
-    if a == nil or b == nil: result = false
+    if a.isNil or b.isNil: result = false
     else: result = sameType(a, b, flags)
 
 proc equalParam(a, b: PSym): TParamsEquality =
@@ -769,7 +769,7 @@ proc equalParams(a, b: PNode): TParamsEquality =
       # continue traversal! If not equal, we can return immediately; else
       # it stays incompatible
     if not sameTypeOrNil(a.sons[0].typ, b.sons[0].typ, {ExactTypeDescValues}):
-      if (a.sons[0].typ == nil) or (b.sons[0].typ == nil):
+      if (a.sons[0].typ.isNil) or (b.sons[0].typ.isNil):
         result = paramsNotEqual # one proc has a result, the other not is OK
       else:
         result = paramsIncompatible # overloading by different
@@ -799,7 +799,7 @@ proc sameTuple(a, b: PType, c: var TSameTypeClosure): bool =
           result = x.name.id == y.name.id
           if not result: break
         else: internalError(a.n.info, "sameTuple")
-    elif a.n != b.n and (a.n == nil or b.n == nil) and IgnoreTupleFields notin c.flags:
+    elif a.n != b.n and (a.n.isNil or b.n.isNil) and IgnoreTupleFields notin c.flags:
       result = false
 
 template ifFastObjectTypeCheckFailed(a, b: PType, body: untyped) =
@@ -1056,7 +1056,7 @@ proc typeAllowedNode(marker: var IntSet, n: PNode, kind: TSymKind,
   if n != nil:
     result = typeAllowedAux(marker, n.typ, kind, flags)
     #if not result: debug(n.typ)
-    if result == nil:
+    if result.isNil:
       case n.kind
       of nkNone..nkNilLit:
         discard
@@ -1073,7 +1073,7 @@ proc matchType*(a: PType, pattern: openArray[tuple[k:TTypeKind, i:int]],
   var a = a
   for k, i in pattern.items:
     if a.kind != k: return false
-    if i >= a.sonsLen or a.sons[i] == nil: return false
+    if i >= a.sonsLen or a.sons[i].isNil: return false
     a = a.sons[i]
   result = a.kind == last
 
@@ -1083,7 +1083,7 @@ proc typeAllowedAux(marker: var IntSet, typ: PType, kind: TSymKind,
   # if we have already checked the type, return true, because we stop the
   # evaluation if something is wrong:
   result = nil
-  if typ == nil: return
+  if typ.isNil: return
   if containsOrIncl(marker, typ.id): return
   var t = skipTypes(typ, abstractInst-{tyTypeDesc})
   case t.kind
@@ -1340,7 +1340,7 @@ proc getSize(typ: PType): BiggestInt =
 
 proc containsGenericTypeIter(t: PType, closure: RootRef): bool =
   if t.kind == tyStatic:
-    return t.n == nil
+    return t.n.isNil
 
   if t.kind == tyTypeDesc:
     if t.base.kind == tyNone: return true
@@ -1432,7 +1432,7 @@ type
 
 proc classify*(t: PType): OrdinalType =
   ## for convenient type checking:
-  if t == nil:
+  if t.isNil:
     result = NoneLike
   else:
     case skipTypes(t, abstractVarRange).kind

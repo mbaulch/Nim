@@ -69,7 +69,7 @@ proc ordinalValToString*(a: PNode): string =
       if n.sons[i].kind != nkSym: internalError(a.info, "ordinalValToString")
       var field = n.sons[i].sym
       if field.position == x:
-        if field.ast == nil:
+        if field.ast.isNil:
           return field.name.s
         else:
           return field.ast.strVal
@@ -449,13 +449,13 @@ proc getConstIfExpr(c: PSym, n: PNode): PNode =
     var it = n.sons[i]
     if it.len == 2:
       var e = getConstExpr(c, it.sons[0])
-      if e == nil: return nil
+      if e.isNil: return nil
       if getOrdValue(e) != 0:
-        if result == nil:
+        if result.isNil:
           result = getConstExpr(c, it.sons[1])
-          if result == nil: return
+          if result.isNil: return
     elif it.len == 1:
-      if result == nil: result = getConstExpr(c, it.sons[0])
+      if result.isNil: result = getConstExpr(c, it.sons[0])
     else: internalError(it.info, "getConstIfExpr()")
 
 proc leValueConv(a, b: PNode): bool =
@@ -479,13 +479,13 @@ proc magicCall(m: PSym, n: PNode): PNode =
   var s = n.sons[0].sym
   var a = getConstExpr(m, n.sons[1])
   var b, c: PNode
-  if a == nil: return
+  if a.isNil: return
   if sonsLen(n) > 2:
     b = getConstExpr(m, n.sons[2])
-    if b == nil: return
+    if b.isNil: return
     if sonsLen(n) > 3:
       c = getConstExpr(m, n.sons[3])
-      if c == nil: return
+      if c.isNil: return
   result = evalOp(s.magic, n, a, b, c)
 
 proc getAppType(n: PNode): PNode =
@@ -534,14 +534,14 @@ proc getArrayConstr(m: PSym, n: PNode): PNode =
     result = n
   else:
     result = getConstExpr(m, n)
-    if result == nil: result = n
+    if result.isNil: result = n
 
 proc foldArrayAccess(m: PSym, n: PNode): PNode =
   var x = getConstExpr(m, n.sons[0])
-  if x == nil or x.typ.skipTypes({tyGenericInst}).kind == tyTypeDesc: return
+  if x.isNil or x.typ.skipTypes({tyGenericInst}).kind == tyTypeDesc: return
 
   var y = getConstExpr(m, n.sons[1])
-  if y == nil: return
+  if y.isNil: return
 
   var idx = getOrdValue(y)
   case x.kind
@@ -568,7 +568,7 @@ proc foldArrayAccess(m: PSym, n: PNode): PNode =
 proc foldFieldAccess(m: PSym, n: PNode): PNode =
   # a real field access; proc calls have already been transformed
   var x = getConstExpr(m, n.sons[0])
-  if x == nil or x.kind notin {nkObjConstr, nkPar}: return
+  if x.isNil or x.kind notin {nkObjConstr, nkPar}: return
 
   var field = n.sons[1].sym
   for i in countup(ord(x.kind == nkObjConstr), sonsLen(x) - 1):
@@ -588,7 +588,7 @@ proc foldConStrStr(m: PSym, n: PNode): PNode =
   result.strVal = ""
   for i in countup(1, sonsLen(n) - 1):
     let a = getConstExpr(m, n.sons[i])
-    if a == nil: return nil
+    if a.isNil: return nil
     result.strVal.add(getStrOrChar(a))
 
 proc newSymNodeTypeDesc*(s: PSym; info: TLineInfo): PNode =
@@ -707,14 +707,14 @@ proc getConstExpr(m: PSym, n: PNode): PNode =
     result = copyTree(n)
     for i in countup(0, sonsLen(n) - 1):
       var a = getConstExpr(m, n.sons[i])
-      if a == nil: return nil
+      if a.isNil: return nil
       result.sons[i] = a
     incl(result.flags, nfAllConst)
   of nkRange:
     var a = getConstExpr(m, n.sons[0])
-    if a == nil: return
+    if a.isNil: return
     var b = getConstExpr(m, n.sons[1])
-    if b == nil: return
+    if b.isNil: return
     result = copyNode(n)
     addSon(result, a)
     addSon(result, b)
@@ -722,14 +722,14 @@ proc getConstExpr(m: PSym, n: PNode): PNode =
     result = copyTree(n)
     for i in countup(0, sonsLen(n) - 1):
       var a = getConstExpr(m, n.sons[i])
-      if a == nil: return nil
+      if a.isNil: return nil
       result.sons[i] = a
     incl(result.flags, nfAllConst)
   of nkObjConstr:
     result = copyTree(n)
     for i in countup(1, sonsLen(n) - 1):
       var a = getConstExpr(m, n.sons[i].sons[1])
-      if a == nil: return nil
+      if a.isNil: return nil
       result.sons[i].sons[1] = a
     incl(result.flags, nfAllConst)
   of nkPar:
@@ -738,17 +738,17 @@ proc getConstExpr(m: PSym, n: PNode): PNode =
     if (sonsLen(n) > 0) and (n.sons[0].kind == nkExprColonExpr):
       for i in countup(0, sonsLen(n) - 1):
         var a = getConstExpr(m, n.sons[i].sons[1])
-        if a == nil: return nil
+        if a.isNil: return nil
         result.sons[i].sons[1] = a
     else:
       for i in countup(0, sonsLen(n) - 1):
         var a = getConstExpr(m, n.sons[i])
-        if a == nil: return nil
+        if a.isNil: return nil
         result.sons[i] = a
     incl(result.flags, nfAllConst)
   of nkChckRangeF, nkChckRange64, nkChckRange:
     var a = getConstExpr(m, n.sons[0])
-    if a == nil: return
+    if a.isNil: return
     if leValueConv(n.sons[1], a) and leValueConv(a, n.sons[2]):
       result = a              # a <= x and x <= b
       result.typ = n.typ
@@ -758,16 +758,16 @@ proc getConstExpr(m: PSym, n: PNode): PNode =
           [typeToString(n.sons[0].typ), typeToString(n.typ)]))
   of nkStringToCString, nkCStringToString:
     var a = getConstExpr(m, n.sons[0])
-    if a == nil: return
+    if a.isNil: return
     result = a
     result.typ = n.typ
   of nkHiddenStdConv, nkHiddenSubConv, nkConv:
     var a = getConstExpr(m, n.sons[1])
-    if a == nil: return
+    if a.isNil: return
     result = foldConv(n, a, check=n.kind == nkHiddenStdConv)
   of nkCast:
     var a = getConstExpr(m, n.sons[1])
-    if a == nil: return
+    if a.isNil: return
     if n.typ.kind in NilableTypes:
       # we allow compile-time 'cast' for pointer types:
       result = a

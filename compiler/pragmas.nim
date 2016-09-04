@@ -246,12 +246,12 @@ proc expectDynlibNode(c: PContext, n: PNode): PNode =
     result = c.semExpr(c, n.sons[1])
     if result.kind == nkSym and result.sym.kind == skConst:
       result = result.sym.ast # look it up
-    if result.typ == nil or result.typ.kind notin {tyPointer, tyString, tyProc}:
+    if result.typ.isNil or result.typ.kind notin {tyPointer, tyString, tyProc}:
       localError(n.info, errStringLiteralExpected)
       result = newEmptyStrNode(n)
 
 proc processDynLib(c: PContext, n: PNode, sym: PSym) =
-  if (sym == nil) or (sym.kind == skModule):
+  if (sym.isNil) or (sym.kind == skModule):
     let lib = getLib(c, libDynamic, expectDynlibNode(c, n))
     if not lib.isOverriden:
       POptionEntry(c.optionStack.tail).dynlib = lib
@@ -638,14 +638,14 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
       of wImportObjC:
         processImportObjC(sym, getOptionalStr(c, it, "$1"), it.info)
       of wAlign:
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         var align = expectIntLit(c, it)
         if (not isPowerOfTwo(align) and align != 0) or align >% high(int16):
           localError(it.info, errPowerOfTwoExpected)
         else:
           sym.typ.align = align.int16
       of wSize:
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         var size = expectIntLit(c, it)
         if not isPowerOfTwo(size) or size <= 0 or size > 8:
           localError(it.info, errPowerOfTwoExpected)
@@ -692,7 +692,7 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
         incl(sym.loc.flags, lfHeader)
         incl(sym.loc.flags, lfNoDecl)
         # implies nodecl, because otherwise header would not make sense
-        if sym.loc.r == nil: sym.loc.r = rope(sym.name.s)
+        if sym.loc.r.isNil: sym.loc.r = rope(sym.name.s)
       of wDestructor:
         sym.flags.incl sfOverriden
         if sym.name.s.normalize != "destroy":
@@ -723,7 +723,7 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
         else: incl(c.module.flags, sfDeprecated)
       of wVarargs:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfVarargs)
       of wBorrow:
         if sym.kind == skType:
@@ -733,19 +733,19 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
           incl(sym.flags, sfBorrow)
       of wFinal:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfFinal)
       of wInheritable:
         noVal(it)
-        if sym.typ == nil or tfFinal in sym.typ.flags: invalidPragma(it)
+        if sym.typ.isNil or tfFinal in sym.typ.flags: invalidPragma(it)
         else: incl(sym.typ.flags, tfInheritable)
       of wAcyclic:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfAcyclic)
       of wShallow:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfShallow)
       of wThread:
         noVal(it)
@@ -759,7 +759,7 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
         else: invalidPragma(it)
       of wPacked:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfPacked)
       of wHint: message(it.info, hintUser, expectStrLit(c, it))
       of wWarning: message(it.info, warnUser, expectStrLit(c, it))
@@ -808,7 +808,7 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
           localError(it.info, errOptionExpected)
       of FirstCallConv..LastCallConv:
         assert(sym != nil)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: sym.typ.callConv = wordToCallConv(k)
       of wEmit: pragmaEmit(c, it)
       of wUnroll: pragmaUnroll(c, it)
@@ -818,33 +818,33 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
         noVal(it)
       of wIncompleteStruct:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfIncompleteStruct)
       of wUnchecked:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfUncheckedArray)
       of wUnion:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfUnion)
       of wRequiresInit:
         noVal(it)
-        if sym.typ == nil: invalidPragma(it)
+        if sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfNeedsInit)
       of wByRef:
         noVal(it)
-        if sym == nil or sym.typ == nil:
+        if sym.isNil or sym.typ.isNil:
           if processOption(c, it): localError(it.info, errOptionExpected)
         else:
           incl(sym.typ.flags, tfByRef)
       of wByCopy:
         noVal(it)
-        if sym.kind != skType or sym.typ == nil: invalidPragma(it)
+        if sym.kind != skType or sym.typ.isNil: invalidPragma(it)
         else: incl(sym.typ.flags, tfByCopy)
       of wPartial:
         noVal(it)
-        if sym.kind != skType or sym.typ == nil: invalidPragma(it)
+        if sym.kind != skType or sym.typ.isNil: invalidPragma(it)
         else:
           incl(sym.typ.flags, tfPartial)
           # .partial types can only work with dead code elimination
@@ -855,30 +855,30 @@ proc singlePragma(c: PContext, sym: PSym, n: PNode, i: int,
         # We check for errors, but do nothing with these pragmas otherwise
         # as they are handled directly in 'evalTemplate'.
         noVal(it)
-        if sym == nil: invalidPragma(it)
+        if sym.isNil: invalidPragma(it)
       of wLine: pragmaLine(c, it)
       of wRaises, wTags: pragmaRaisesOrTags(c, it)
       of wLocks:
-        if sym == nil: pragmaLockStmt(c, it)
-        elif sym.typ == nil: invalidPragma(it)
+        if sym.isNil: pragmaLockStmt(c, it)
+        elif sym.typ.isNil: invalidPragma(it)
         else: sym.typ.lockLevel = pragmaLocks(c, it)
       of wBitsize:
-        if sym == nil or sym.kind != skField or it.kind != nkExprColonExpr:
+        if sym.isNil or sym.kind != skField or it.kind != nkExprColonExpr:
           invalidPragma(it)
         else:
           sym.bitsize = expectIntLit(c, it)
       of wGuard:
-        if sym == nil or sym.kind notin {skVar, skLet, skField}:
+        if sym.isNil or sym.kind notin {skVar, skLet, skField}:
           invalidPragma(it)
         else:
           sym.guard = pragmaGuard(c, it, sym.kind)
       of wGoto:
-        if sym == nil or sym.kind notin {skVar, skLet}:
+        if sym.isNil or sym.kind notin {skVar, skLet}:
           invalidPragma(it)
         else:
           sym.flags.incl sfGoto
       of wExportNims:
-        if sym == nil: invalidPragma(it)
+        if sym.isNil: invalidPragma(it)
         else: magicsys.registerNimScriptSymbol(sym)
       of wInjectStmt:
         if it.kind != nkExprColonExpr:
@@ -929,10 +929,10 @@ proc implicitPragmas*(c: PContext, sym: PSym, n: PNode,
         sfImportc in sym.flags and lib != nil:
       incl(sym.loc.flags, lfDynamicLib)
       addToLib(lib, sym)
-      if sym.loc.r == nil: sym.loc.r = rope(sym.name.s)
+      if sym.loc.r.isNil: sym.loc.r = rope(sym.name.s)
 
 proc hasPragma*(n: PNode, pragma: TSpecialWord): bool =
-  if n == nil or n.sons == nil:
+  if n.isNil or n.sons.isNil:
     return false
 
   for p in n.sons:
@@ -943,12 +943,12 @@ proc hasPragma*(n: PNode, pragma: TSpecialWord): bool =
   return false
 
 proc pragmaRec(c: PContext, sym: PSym, n: PNode, validPragmas: TSpecialWords) =
-  if n == nil: return
+  if n.isNil: return
   for i in countup(0, sonsLen(n) - 1):
     if n.sons[i].kind == nkPragma: pragmaRec(c, sym, n.sons[i], validPragmas)
     elif singlePragma(c, sym, n, i, validPragmas): break
 
 proc pragma(c: PContext, sym: PSym, n: PNode, validPragmas: TSpecialWords) =
-  if n == nil: return
+  if n.isNil: return
   pragmaRec(c, sym, n, validPragmas)
   implicitPragmas(c, sym, n, validPragmas)

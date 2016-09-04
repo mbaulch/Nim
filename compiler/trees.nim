@@ -13,7 +13,7 @@ import
   ast, astalgo, lexer, msgs, strutils, wordrecg
 
 proc cyclicTreeAux(n: PNode, visited: var seq[PNode]): bool =
-  if n == nil: return
+  if n.isNil: return
   for v in visited:
     if v == n: return true
   if not (n.kind in {nkEmpty..nkNilLit}):

@@ -46,7 +46,7 @@ proc rawHandleSelf(c: PContext; owner: PSym) =
         var t = c.p.selfSym.typ.skipTypes(abstractPtrs)
         while t.kind == tyObject:
           addObjFieldsToLocalScope(c, t.n)
-          if t.sons[0] == nil: break
+          if t.sons[0].isNil: break
           t = t.sons[0].skipTypes(skipPtrs)
 
 proc pushProcCon*(c: PContext; owner: PSym) =
@@ -64,7 +64,7 @@ iterator instantiateGenericParamList(c: PContext, n: PNode, pt: TIdTable): PSym 
     var s = newSym(symKind, q.name, getCurrOwner(), q.info)
     s.flags = s.flags + {sfUsed, sfFromGeneric}
     var t = PType(idTableGet(pt, q.typ))
-    if t == nil:
+    if t.isNil:
       if tfRetType in q.typ.flags:
         # keep the generic type and allow the return type to be bound
         # later by semAsgn in return type inference scenario
@@ -102,7 +102,7 @@ proc freshGenSyms(n: PNode, owner, orig: PSym, symMap: var TIdTable) =
   if n.kind == nkSym and sfGenSym in n.sym.flags and n.sym.owner == orig:
     let s = n.sym
     var x = PSym(idTableGet(symMap, s))
-    if x == nil:
+    if x.isNil:
       x = copySym(s, false)
       x.owner = owner
       idTablePut(symMap, s, x)
@@ -271,7 +271,7 @@ proc generateInstance(c: PContext, fn: PSym, pt: TIdTable,
     incl(result.flags, sfCompileTime)
   n.sons[genericParamsPos] = ast.emptyNode
   var oldPrc = genericCacheGet(fn, entry[], c.compilesContextId)
-  if oldPrc == nil:
+  if oldPrc.isNil:
     # we MUST not add potentially wrong instantiations to the caching mechanism.
     # This means recursive instantiations behave differently when in
     # a ``compiles`` context but this is the lesser evil. See

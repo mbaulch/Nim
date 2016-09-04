@@ -165,7 +165,7 @@ proc moveConst(x: var TFullReg, y: TFullReg) =
 template asgnRef(x, y: untyped) = moveConst(x, y)
 
 proc copyValue(src: PNode): PNode =
-  if src == nil or nfIsRef in src.flags:
+  if src.isNil or nfIsRef in src.flags:
     return src
   result = newNode(src.kind)
   result.info = src.info

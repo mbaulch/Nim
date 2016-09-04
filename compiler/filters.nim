@@ -37,19 +37,19 @@ proc getArg(n: PNode, name: string, pos: int): PNode =
 
 proc charArg(n: PNode, name: string, pos: int, default: char): char =
   var x = getArg(n, name, pos)
-  if x == nil: result = default
+  if x.isNil: result = default
   elif x.kind == nkCharLit: result = chr(int(x.intVal))
   else: invalidPragma(n)
 
 proc strArg(n: PNode, name: string, pos: int, default: string): string =
   var x = getArg(n, name, pos)
-  if x == nil: result = default
+  if x.isNil: result = default
   elif x.kind in {nkStrLit..nkTripleStrLit}: result = x.strVal
   else: invalidPragma(n)
 
 proc boolArg(n: PNode, name: string, pos: int, default: bool): bool =
   var x = getArg(n, name, pos)
-  if x == nil: result = default
+  if x.isNil: result = default
   elif (x.kind == nkIdent) and identEq(x.ident, "true"): result = true
   elif (x.kind == nkIdent) and identEq(x.ident, "false"): result = false
   else: invalidPragma(n)

@@ -180,9 +180,9 @@ proc genComment(d: PDoc, n: PNode): string =
                                dummyHasToc, d.options), result)
 
 proc genRecComment(d: PDoc, n: PNode): Rope =
-  if n == nil: return nil
+  if n.isNil: return nil
   result = genComment(d, n).rope
-  if result == nil:
+  if result.isNil:
     if n.kind notin {nkEmpty..nkNilLit, nkEnumTy}:
       for i in countup(0, len(n)-1):
         result = genRecComment(d, n.sons[i])
@@ -197,7 +197,7 @@ proc getPlainDocstring(n: PNode): string =
   ## of comments from the tree. The proc will recursively scan and return all
   ## the concatenated ``##`` comments of the node.
   result = ""
-  if n == nil: return
+  if n.isNil: return
   if n.comment != nil and startsWith(n.comment, "##"):
     result = n.comment
   if result.len < 1:
@@ -208,7 +208,7 @@ proc getPlainDocstring(n: PNode): string =
 
 
 proc findDocComment(n: PNode): PNode =
-  if n == nil: return nil
+  if n.isNil: return nil
   if not isNil(n.comment) and startsWith(n.comment, "##"): return n
   for i in countup(0, safeLen(n)-1):
     result = findDocComment(n.sons[i])
@@ -597,7 +597,7 @@ proc genSection(d: PDoc, kind: TSymKind) =
     "Imports", "Types", "Vars", "Lets", "Consts", "Vars", "Procs", "Methods",
     "Iterators", "Converters", "Macros", "Templates"
   ]
-  if d.section[kind] == nil: return
+  if d.section[kind].isNil: return
   var title = sectionNames[kind].rope
   d.section[kind] = ropeFormatNamedVars(getConfigVar("doc.section"), [
       "sectionid", "sectionTitle", "sectionTitleID", "content"], [
@@ -684,7 +684,7 @@ proc writeOutputJson*(d: PDoc, filename, outExt: string,
 
 proc commandDoc*() =
   var ast = parseFile(gProjectMainIdx)
-  if ast == nil: return
+  if ast.isNil: return
   var d = newDocumentor(gProjectFull, options.gConfigVars)
   d.hasToc = true
   generateDoc(d, ast)
@@ -713,7 +713,7 @@ proc commandRst2TeX*() =
 
 proc commandJson*() =
   var ast = parseFile(gProjectMainIdx)
-  if ast == nil: return
+  if ast.isNil: return
   var d = newDocumentor(gProjectFull, options.gConfigVars)
   d.hasToc = true
   generateJson(d, ast)

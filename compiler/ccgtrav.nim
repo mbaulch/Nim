@@ -22,7 +22,7 @@ proc genCaseRange(p: BProc, branch: PNode)
 proc getTemp(p: BProc, t: PType, result: var TLoc; needsInit=false)
 
 proc genTraverseProc(c: var TTraversalClosure, accessor: Rope, n: PNode) =
-  if n == nil: return
+  if n.isNil: return
   case n.kind
   of nkRecList:
     for i in countup(0, sonsLen(n) - 1):
@@ -44,7 +44,7 @@ proc genTraverseProc(c: var TTraversalClosure, accessor: Rope, n: PNode) =
     lineF(p, cpsStmts, "} $n", [])
   of nkSym:
     let field = n.sym
-    if field.loc.t == nil:
+    if field.loc.t.isNil:
       internalError(n.info, "genTraverseProc()")
     genTraverseProc(c, "$1.$2" % [accessor, field.loc.r], field.loc.t)
   else: internalError(n.info, "genTraverseProc()")
@@ -56,7 +56,7 @@ proc parentObj(accessor: Rope; m: BModule): Rope {.inline.} =
     result = accessor
 
 proc genTraverseProc(c: var TTraversalClosure, accessor: Rope, typ: PType) =
-  if typ == nil: return
+  if typ.isNil: return
 
   let typ = getUniqueType(typ)
   var p = c.p

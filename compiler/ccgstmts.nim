@@ -952,7 +952,7 @@ proc genAsmOrEmitStmt(p: BProc, t: PNode, isAsmStmt=false): Rope =
         res.add($getTypeDesc(p.module, sym.typ))
       else:
         var r = sym.loc.r
-        if r == nil:
+        if r.isNil:
           # if no name has already been given,
           # it doesn't matter much:
           r = mangleName(sym)
@@ -984,7 +984,7 @@ proc genAsmStmt(p: BProc, t: PNode) =
   # see bug #2362, "top level asm statements" seem to be a mis-feature
   # but even if we don't do this, the example in #2362 cannot possibly
   # work:
-  if p.prc == nil:
+  if p.prc.isNil:
     # top level asm statement?
     addf(p.module.s[cfsProcHeaders], CC[cCompiler].asmStmtFrmt, [s])
   else:
@@ -1000,7 +1000,7 @@ proc determineSection(n: PNode): TCFileSection =
 
 proc genEmit(p: BProc, t: PNode) =
   var s = genAsmOrEmitStmt(p, t.sons[1])
-  if p.prc == nil:
+  if p.prc.isNil:
     # top level emit pragma?
     let section = determineSection(t[1])
     genCLineDir(p.module.s[section], t.info)

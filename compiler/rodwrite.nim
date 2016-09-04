@@ -108,7 +108,7 @@ proc pushSym(w: PRodWriter, s: PSym) =
 
 proc encodeNode(w: PRodWriter, fInfo: TLineInfo, n: PNode,
                 result: var string) =
-  if n == nil:
+  if n.isNil:
     # nil nodes have to be stored too:
     result.add("()")
     return
@@ -191,7 +191,7 @@ proc encodeLoc(w: PRodWriter, loc: TLoc, result: var string) =
     add(result, '>')
 
 proc encodeType(w: PRodWriter, t: PType, result: var string) =
-  if t == nil:
+  if t.isNil:
     # nil nodes have to be stored too:
     result.add("[]")
     return
@@ -248,7 +248,7 @@ proc encodeType(w: PRodWriter, t: PType, result: var string) =
     pushSym(w, s)
   encodeLoc(w, t.loc, result)
   for i in countup(0, sonsLen(t) - 1):
-    if t.sons[i] == nil:
+    if t.sons[i].isNil:
       add(result, "^()")
     else:
       add(result, '^')
@@ -277,7 +277,7 @@ proc encodeInstantiations(w: PRodWriter; s: seq[PInstantiation];
     encodeVInt(t.compilesId, result)
 
 proc encodeSym(w: PRodWriter, s: PSym, result: var string) =
-  if s == nil:
+  if s.isNil:
     # nil nodes have to be stored too:
     result.add("{}")
     return
@@ -381,7 +381,7 @@ proc symStack(w: PRodWriter): int =
       inc result
     elif iiTableGet(w.index.tab, s.id) == InvalidKey:
       var m = getModule(s)
-      if m == nil and s.kind != skPackage:
+      if m.isNil and s.kind != skPackage:
         internalError("symStack: module nil: " & s.name.s)
       if s.kind == skPackage or m.id == w.module.id or sfFromGeneric in s.flags:
         # put definition in here
@@ -452,7 +452,7 @@ proc rawAddInterfaceSym(w: PRodWriter, s: PSym) =
   processStacks(w, false)
 
 proc addInterfaceSym(w: PRodWriter, s: PSym) =
-  if w == nil: return
+  if w.isNil: return
   if s.kind in ExportableSymKinds and
       {sfExported, sfCompilerProc} * s.flags != {}:
     rawAddInterfaceSym(w, s)
@@ -568,7 +568,7 @@ proc writeRod(w: PRodWriter) =
 
 proc process(c: PPassContext, n: PNode): PNode =
   result = n
-  if c == nil: return
+  if c.isNil: return
   var w = PRodWriter(c)
   case n.kind
   of nkStmtList:
@@ -578,8 +578,8 @@ proc process(c: PPassContext, n: PNode): PNode =
   of nkProcDef, nkMethodDef, nkIteratorDef, nkConverterDef,
       nkTemplateDef, nkMacroDef:
     var s = n.sons[namePos].sym
-    if s == nil: internalError(n.info, "rodwrite.process")
-    if n.sons[bodyPos] == nil:
+    if s.isNil: internalError(n.info, "rodwrite.process")
+    if n.sons[bodyPos].isNil:
       internalError(n.info, "rodwrite.process: body is nil")
     if n.sons[bodyPos].kind != nkEmpty or s.magic != mNone or
         sfForward notin s.flags:

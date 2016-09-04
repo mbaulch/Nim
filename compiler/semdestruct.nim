@@ -47,7 +47,7 @@ proc doDestructorStuff(c: PContext, s: PSym, n: PNode) =
     for i in countup(0, t.sonsLen - 1):
       # when inheriting directly from object
       # there will be a single nil son
-      if t.sons[i] == nil: continue
+      if t.sons[i].isNil: continue
       let destructableT = instantiateDestructor(c, t.sons[i])
       if destructableT != nil:
         n.sons[bodyPos].addSon(newNode(nkCall, t.sym.info, @[
@@ -74,7 +74,7 @@ proc destroyCase(c: PContext, n: PNode, holder: PNode): PNode =
     var caseBranch = newNode(ni.kind, ni.info, ni.sons[0..ni.len-2])
 
     let stmt = destroyFieldOrFields(c, ni.lastSon, holder)
-    if stmt == nil:
+    if stmt.isNil:
       caseBranch.addSon(newNode(nkStmtList, ni.info, @[]))
     else:
       caseBranch.addSon(stmt)
@@ -90,7 +90,7 @@ proc destroyFieldOrFields(c: PContext, field: PNode, holder: PNode): PNode =
   template maybeAddLine(e) =
     let stmt = e
     if stmt != nil:
-      if result == nil: result = newNode(nkStmtList)
+      if result.isNil: result = newNode(nkStmtList)
       result.addSon(stmt)
 
   case field.kind
@@ -110,7 +110,7 @@ proc generateDestructor(c: PContext, t: PType): PNode =
 
   # XXX: This may be true for some C-imported types such as
   # Tposix_spawnattr
-  if t.n == nil or t.n.sons == nil: return
+  if t.n.isNil or t.n.sons.isNil: return
   internalAssert t.n.kind == nkRecList
   let destructedObj = newIdentNode(destructorParam, unknownLineInfo())
   # call the destructods of all fields
@@ -177,7 +177,7 @@ proc instantiateDestructor(c: PContext, typ: PType): PType =
 
 proc createDestructorCall(c: PContext, s: PSym): PNode =
   let varTyp = s.typ
-  if varTyp == nil or sfGlobal in s.flags: return
+  if varTyp.isNil or sfGlobal in s.flags: return
   let destructableT = instantiateDestructor(c, varTyp)
   if destructableT != nil:
     let call = semStmt(c, newNode(nkCall, s.info, @[
@@ -209,7 +209,7 @@ proc insertDestructors(c: PContext,
       varTyp = varId.sym.typ
       info = varId.info
 
-    if varTyp == nil or sfGlobal in varId.sym.flags: continue
+    if varTyp.isNil or sfGlobal in varId.sym.flags: continue
     let destructableT = instantiateDestructor(c, varTyp)
 
     if destructableT != nil:

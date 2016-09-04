@@ -406,7 +406,7 @@ proc decodeSym(r: PRodReader, info: TLineInfo): PSym =
     internalError(info, "decodeSym: no ident")
   #echo "decoding: {", ident.s
   result = r.syms.getOrDefault(id)
-  if result == nil:
+  if result.isNil:
     new(result)
     result.id = id
     r.syms[result.id] = result
@@ -546,7 +546,7 @@ proc processCompilerProcs(r: PRodReader, module: PSym) =
     var key = decodeVInt(r.s, r.pos)
     inc(r.pos)                # #10
     var s = r.syms.getOrDefault(key)
-    if s == nil:
+    if s.isNil:
       s = newStub(r, w, key)
       s.owner = module
       r.syms[s.id] = s
@@ -747,7 +747,7 @@ proc newRodReader(modfilename: string, hash: SecureHash,
 
 proc rrGetType(r: PRodReader, id: int, info: TLineInfo): PType =
   result = PType(idTableGet(gTypeTable, id))
-  if result == nil:
+  if result.isNil:
     # load the type:
     var oldPos = r.pos
     var d = iiTableGet(r.index.tab, id)
@@ -796,7 +796,7 @@ proc getReader(moduleId: int): PRodReader =
 
 proc rrGetSym(r: PRodReader, id: int, info: TLineInfo): PSym =
   result = r.syms.getOrDefault(id)
-  if result == nil:
+  if result.isNil:
     # load the symbol:
     var d = iiTableGet(r.index.tab, id)
     if d == InvalidKey:
@@ -878,7 +878,7 @@ proc checkDep(fileIdx: int32): TReasonForRecompile =
   result = rrNone
   var rodfile = toGeneratedFile(filename.withPackageName, RodExt)
   var r = newRodReader(rodfile, hash, fileIdx)
-  if r == nil:
+  if r.isNil:
     result = (if existsFile(rodfile): rrRodInvalid else: rrRodDoesNotExist)
   else:
     processRodFile(r, hash)
@@ -958,7 +958,7 @@ proc getBody*(s: PSym): PNode =
   # prevent crashes due to incorrect macro transformations (bug #2377)
   if s.ast.isNil or bodyPos >= s.ast.len: return ast.emptyNode
   result = s.ast.sons[bodyPos]
-  if result == nil:
+  if result.isNil:
     assert s.offset != 0
     var r = gMods[s.position].rd
     var oldPos = r.pos
@@ -1004,7 +1004,7 @@ proc writeNode(f: File; n: PNode) =
   f.write(")")
 
 proc writeSym(f: File; s: PSym) =
-  if s == nil:
+  if s.isNil:
     f.write("{}\n")
     return
   f.write("{")
@@ -1042,7 +1042,7 @@ proc writeSym(f: File; s: PSym) =
   f.write("}\n")
 
 proc writeType(f: File; t: PType) =
-  if t == nil:
+  if t.isNil:
     f.write("[]\n")
     return
   f.write('[')
@@ -1070,7 +1070,7 @@ proc writeType(f: File; t: PType) =
     f.write('=')
     f.write($t.align)
   for i in countup(0, sonsLen(t) - 1):
-    if t.sons[i] == nil:
+    if t.sons[i].isNil:
       f.write("^()")
     else:
       f.write('^')
@@ -1079,7 +1079,7 @@ proc writeType(f: File; t: PType) =
 
 proc viewFile(rodfile: string) =
   var r = newRodReader(rodfile, secureHash(""), 0)
-  if r == nil:
+  if r.isNil:
     rawMessage(errGenerated, "cannot open file (or maybe wrong version):" &
        rodfile)
     return

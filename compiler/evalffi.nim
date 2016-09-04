@@ -74,7 +74,7 @@ proc importcSymbol*(sym: PSym): PNode =
     result.intVal = cast[ByteAddress](theAddr)
 
 proc mapType(t: ast.PType): ptr libffi.TType =
-  if t == nil: return addr libffi.type_void
+  if t.isNil: return addr libffi.type_void
   
   case t.kind
   of tyBool, tyEnum, tyChar, tyInt..tyInt64, tyUInt..tyUInt64, tySet:
@@ -368,7 +368,7 @@ proc unpack(x: pointer, typ: PType, n: PNode): PNode =
     let p = rd(pointer, x)
     if p.isNil:
       setNil()
-    elif n == nil or n.kind == nkPtrLit:
+    elif n.isNil or n.kind == nkPtrLit:
       awi(nkPtrLit, cast[ByteAddress](p))
     elif n != nil and n.len == 1:
       internalAssert n.kind == nkRefTy

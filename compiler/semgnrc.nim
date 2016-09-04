@@ -105,7 +105,7 @@ proc lookup(c: PContext, n: PNode, flags: TSemGenericFlags,
   result = n
   let ident = considerQuotedIdent(n)
   var s = searchInScopes(c, ident).skipAlias(n)
-  if s == nil:
+  if s.isNil:
     if ident.id notin ctx.toMixin and withinMixin notin flags:
       localError(n.info, errUndeclaredIdentifier, ident.s)
   else:
@@ -192,7 +192,7 @@ proc semGenericStmt(c: PContext, n: PNode,
     checkMinSonsLen(n, 1)
     let fn = n.sons[0]
     var s = qualifiedLookUp(c, fn, {})
-    if s == nil and withinMixin notin flags and
+    if s.isNil and withinMixin notin flags and
         fn.kind in {nkIdent, nkAccQuoted} and
         considerQuotedIdent(fn).id notin ctx.toMixin:
       localError(n.info, errUndeclaredIdentifier, fn.renderTree)
@@ -432,7 +432,7 @@ proc semGenericStmt(c: PContext, n: PNode,
     var body: PNode
     if n.sons[namePos].kind == nkSym:
       let s = n.sons[namePos].sym
-      if sfGenSym in s.flags and s.ast == nil:
+      if sfGenSym in s.flags and s.ast.isNil:
         body = n.sons[bodyPos]
       else:
         body = s.getBody

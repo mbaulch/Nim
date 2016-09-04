@@ -103,7 +103,7 @@ proc genEnumInfo(p: PProc, typ: PType, name: Rope) =
     if (typ.n.sons[i].kind != nkSym): internalError(typ.n.info, "genEnumInfo")
     let field = typ.n.sons[i].sym
     if i > 0: add(s, ", " & tnl)
-    let extName = if field.ast == nil: field.name.s else: field.ast.strVal
+    let extName = if field.ast.isNil: field.name.s else: field.ast.strVal
     addf(s, "{kind: 1, offset: $1, typ: $2, name: $3, len: 0, sons: null}",
          [rope(field.position), name, makeJSString(extName)])
   var n = ("var NNI$1 = {kind: 2, offset: 0, typ: null, " &
@@ -129,7 +129,7 @@ proc genEnumInfoPHP(p: PProc; t: PType): Rope =
     if (t.n.sons[i].kind != nkSym): internalError(t.n.info, "genEnumInfo")
     let field = t.n.sons[i].sym
     if i > 0: add(s, ", " & tnl)
-    let extName = if field.ast == nil: field.name.s else: field.ast.strVal
+    let extName = if field.ast.isNil: field.name.s else: field.ast.strVal
     addf(s, "$# => $#$n",
          [rope(field.position), makeJSString(extName)])
   prepend(p.g.typeInfo, "$$$# = $#;$n" % [result, s])

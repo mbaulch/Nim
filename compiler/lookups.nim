@@ -68,7 +68,7 @@ iterator walkScopes*(scope: PScope): PScope =
     current = current.parent
 
 proc skipAlias*(s: PSym; n: PNode): PSym =
-  if s == nil or s.kind != skAlias:
+  if s.isNil or s.kind != skAlias:
     result = s
   else:
     result = s.owner
@@ -247,7 +247,7 @@ proc lookUp*(c: PContext, n: PNode): PSym =
   case n.kind
   of nkIdent:
     result = searchInScopes(c, n.ident).skipAlias(n)
-    if result == nil:
+    if result.isNil:
       fixSpelling(n, n.ident, searchInScopes)
       localError(n.info, errUndeclaredIdentifier, n.ident.s)
       result = errorSym(c, n)
@@ -256,7 +256,7 @@ proc lookUp*(c: PContext, n: PNode): PSym =
   of nkAccQuoted:
     var ident = considerQuotedIdent(n)
     result = searchInScopes(c, ident).skipAlias(n)
-    if result == nil:
+    if result.isNil:
       fixSpelling(n, ident, searchInScopes)
       localError(n.info, errUndeclaredIdentifier, ident.s)
       result = errorSym(c, n)
@@ -280,7 +280,7 @@ proc qualifiedLookUp*(c: PContext, n: PNode, flags: set[TLookupFlag]): PSym =
       result = searchInScopes(c, ident).skipAlias(n)
     else:
       result = searchInScopes(c, ident, allExceptModule).skipAlias(n)
-    if result == nil and checkUndeclared in flags:
+    if result.isNil and checkUndeclared in flags:
       fixSpelling(n, ident, searchInScopes)
       localError(n.info, errUndeclaredIdentifier, ident.s)
       result = errorSym(c, n)
@@ -305,7 +305,7 @@ proc qualifiedLookUp*(c: PContext, n: PNode, flags: set[TLookupFlag]): PSym =
           result = strTableGet(c.topLevelScope.symbols, ident).skipAlias(n)
         else:
           result = strTableGet(m.tab, ident).skipAlias(n)
-        if result == nil and checkUndeclared in flags:
+        if result.isNil and checkUndeclared in flags:
           fixSpelling(n.sons[1], ident, searchInScopes)
           localError(n.sons[1].info, errUndeclaredIdentifier, ident.s)
           result = errorSym(c, n.sons[1])
@@ -332,7 +332,7 @@ proc initOverloadIter*(o: var TOverloadIter, c: PContext, n: PNode): PSym =
         break
       else:
         o.scope = o.scope.parent
-        if o.scope == nil: break
+        if o.scope.isNil: break
   of nkSym:
     result = n.sym
     o.mode = oimDone
@@ -380,9 +380,9 @@ proc nextOverloadIter*(o: var TOverloadIter, c: PContext, n: PNode): PSym =
   of oimNoQualifier:
     if o.scope != nil:
       result = nextIdentIter(o.it, o.scope.symbols).skipAlias(n)
-      while result == nil:
+      while result.isNil:
         o.scope = o.scope.parent
-        if o.scope == nil: break
+        if o.scope.isNil: break
         result = initIdentIter(o.it, o.scope.symbols, o.it.name).skipAlias(n)
         # BUGFIX: o.it.name <-> n.ident
     else:
@@ -402,16 +402,16 @@ proc nextOverloadIter*(o: var TOverloadIter, c: PContext, n: PNode): PSym =
       o.scope = c.currentScope
       result = firstIdentExcluding(o.it, o.scope.symbols,
                                    n.sons[0].sym.name, o.inSymChoice).skipAlias(n)
-      while result == nil:
+      while result.isNil:
         o.scope = o.scope.parent
-        if o.scope == nil: break
+        if o.scope.isNil: break
         result = firstIdentExcluding(o.it, o.scope.symbols,
                                      n.sons[0].sym.name, o.inSymChoice).skipAlias(n)
   of oimSymChoiceLocalLookup:
     result = nextIdentExcluding(o.it, o.scope.symbols, o.inSymChoice).skipAlias(n)
-    while result == nil:
+    while result.isNil:
       o.scope = o.scope.parent
-      if o.scope == nil: break
+      if o.scope.isNil: break
       result = firstIdentExcluding(o.it, o.scope.symbols,
                                    n.sons[0].sym.name, o.inSymChoice).skipAlias(n)
 

@@ -80,7 +80,7 @@ proc hashSym(c: var MD5Context, s: PSym) =
     c &= s.name.s
 
 proc hashTree(c: var MD5Context, n: PNode) =
-  if n == nil:
+  if n.isNil:
     c &= "\255"
     return
   var k = n.kind
@@ -106,7 +106,7 @@ proc hashTree(c: var MD5Context, n: PNode) =
 
 proc hashType(c: var MD5Context, t: PType) =
   # modelled after 'typeToString'
-  if t == nil:
+  if t.isNil:
     c &= "\254"
     return
 
@@ -185,7 +185,7 @@ proc pushSym(w: PRodWriter, s: PSym) =
 
 proc encodeNode(w: PRodWriter, fInfo: TLineInfo, n: PNode,
                 result: var string) =
-  if n == nil:
+  if n.isNil:
     # nil nodes have to be stored too:
     result.add("()")
     return
@@ -269,7 +269,7 @@ proc encodeLoc(w: PRodWriter, loc: TLoc, result: var string) =
     add(result, '>')
 
 proc encodeType(w: PRodWriter, t: PType, result: var string) =
-  if t == nil:
+  if t.isNil:
     # nil nodes have to be stored too:
     result.add("[]")
     return
@@ -305,7 +305,7 @@ proc encodeType(w: PRodWriter, t: PType, result: var string) =
     encodeVInt(t.align, result)
   encodeLoc(w, t.loc, result)
   for i in countup(0, sonsLen(t) - 1):
-    if t.sons[i] == nil:
+    if t.sons[i].isNil:
       add(result, "^()")
     else:
       add(result, '^')
@@ -321,7 +321,7 @@ proc encodeLib(w: PRodWriter, lib: PLib, info: TLineInfo, result: var string) =
   encodeNode(w, info, lib.path, result)
 
 proc encodeSym(w: PRodWriter, s: PSym, result: var string) =
-  if s == nil:
+  if s.isNil:
     # nil nodes have to be stored too:
     result.add("{}")
     return

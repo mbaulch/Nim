@@ -13,7 +13,7 @@ import
   hashes, ast, astalgo, types
 
 proc hashTree(n: PNode): Hash =
-  if n == nil: return
+  if n.isNil: return
   result = ord(n.kind)
   case n.kind
   of nkEmpty, nkNilLit, nkType:
@@ -70,7 +70,7 @@ proc nodeTableRawInsert(data: var TNodePairSeq, k: Hash, key: PNode,
                         val: int) =
   var h: Hash = k and high(data)
   while data[h].key != nil: h = nextTry(h, high(data))
-  assert(data[h].key == nil)
+  assert(data[h].key.isNil)
   data[h].h = k
   data[h].key = key
   data[h].val = val

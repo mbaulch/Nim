@@ -61,7 +61,7 @@ type
     init*, cond*, increment*, body*: PNode
 
 proc extractForLoop*(loop, fullTree: PNode): ForLoop =
-  ## returns 'counter == nil' if the while loop 'n' is not a for loop:
+  ## returns 'counter.isNil' if the while loop 'n' is not a for loop:
   assert loop.kind == nkWhileStmt
   let cond == loop[0]
 

@@ -1050,7 +1050,7 @@ var anyGlobal* = newSym(skVar, getIdent("*"), nil, unknownLineInfo())
 
 proc isMetaType*(t: PType): bool =
   return t.kind in tyMetaTypes or
-         (t.kind == tyStatic and t.n == nil) or
+         (t.kind == tyStatic and t.n.isNil) or
          tfHasMeta in t.flags
 
 proc linkTo*(t: PType, s: PSym): PType {.discardable.} =
@@ -1074,7 +1074,7 @@ template filename*(c: PSym): string =
 proc appendToModule*(m: PSym, n: PNode) =
   ## The compiler will use this internally to add nodes that will be
   ## appended to the module after the sem pass
-  if m.ast == nil:
+  if m.ast.isNil:
     m.ast = newNode(nkStmtList)
     m.ast.sons = @[n]
   else:
@@ -1216,8 +1216,8 @@ proc mergeLoc(a: var TLoc, b: TLoc) =
   if a.k == low(a.k): a.k = b.k
   if a.s == low(a.s): a.s = b.s
   a.flags = a.flags + b.flags
-  if a.t == nil: a.t = b.t
-  if a.r == nil: a.r = b.r
+  if a.t.isNil: a.t = b.t
+  if a.r.isNil: a.r = b.r
   #if a.a == 0: a.a = b.a
 
 proc newSons*(father: PNode, length: int) =
@@ -1253,7 +1253,7 @@ proc assignType*(dest, src: PType) =
   if src.sym != nil:
     if dest.sym != nil:
       dest.sym.flags = dest.sym.flags + src.sym.flags
-      if dest.sym.annex == nil: dest.sym.annex = src.sym.annex
+      if dest.sym.annex.isNil: dest.sym.annex = src.sym.annex
       mergeLoc(dest.sym.loc, src.sym.loc)
     else:
       dest.sym = src.sym
@@ -1301,7 +1301,7 @@ proc createModuleAlias*(s: PSym, newIdent: PIdent, info: TLineInfo): PSym =
   result.loc = s.loc
   result.annex = s.annex
   # XXX once usedGenerics is used, ensure module aliases keep working!
-  assert s.usedGenerics == nil
+  assert s.usedGenerics.isNil
 
 proc initStrTable*(x: var TStrTable) =
   x.counter = 0
@@ -1402,7 +1402,7 @@ proc delSon*(father: PNode, idx: int) =
 
 proc copyNode*(src: PNode): PNode =
   # does not copy its sons!
-  if src == nil:
+  if src.isNil:
     return nil
   result = newNode(src.kind)
   result.info = src.info
@@ -1421,7 +1421,7 @@ proc copyNode*(src: PNode): PNode =
 
 proc shallowCopy*(src: PNode): PNode =
   # does not copy its sons, but provides space for them:
-  if src == nil: return nil
+  if src.isNil: return nil
   result = newNode(src.kind)
   result.info = src.info
   result.typ = src.typ
@@ -1439,7 +1439,7 @@ proc shallowCopy*(src: PNode): PNode =
 
 proc copyTree*(src: PNode): PNode =
   # copy a whole syntax tree; performs deep copying
-  if src == nil:
+  if src.isNil:
     return nil
   result = newNode(src.kind)
   result.info = src.info
@@ -1467,14 +1467,14 @@ proc hasSonWith*(n: PNode, kind: TNodeKind): bool =
 
 proc hasNilSon*(n: PNode): bool =
   for i in countup(0, safeLen(n) - 1):
-    if n.sons[i] == nil:
+    if n.sons[i].isNil:
       return true
     elif hasNilSon(n.sons[i]):
       return true
   result = false
 
 proc containsNode*(n: PNode, kinds: TNodeKinds): bool =
-  if n == nil: return
+  if n.isNil: return
   case n.kind
   of nkEmpty..nkNilLit: result = n.kind in kinds
   else:
@@ -1559,7 +1559,7 @@ proc isAtom*(n: PNode): bool {.inline.} =
 
 proc isEmptyType*(t: PType): bool {.inline.} =
   ## 'void' and 'stmt' types are often equivalent to 'nil' these days:
-  result = t == nil or t.kind in {tyVoid, tyStmt}
+  result = t.isNil or t.kind in {tyVoid, tyStmt}
 
 proc makeStmtList*(n: PNode): PNode =
   if n.kind == nkStmtList:

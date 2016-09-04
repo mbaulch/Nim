@@ -999,7 +999,7 @@ proc internalError*(errMsg: string) =
   rawMessage(errInternal, errMsg)
 
 template assertNotNil*(e): untyped =
-  if e == nil: internalError($instantiationInfo())
+  if e.isNil: internalError($instantiationInfo())
   e
 
 template internalAssert*(e: bool) =

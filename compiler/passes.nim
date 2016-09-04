@@ -161,12 +161,12 @@ proc processModule*(module: PSym, stream: PLLStream,
     a: TPassContextArray
     s: PLLStream
     fileIdx = module.fileIdx
-  if rd == nil:
+  if rd.isNil:
     openPasses(a, module)
-    if stream == nil:
+    if stream.isNil:
       let filename = fileIdx.toFullPathConsiderDirty
       s = llStreamOpen(filename, fmRead)
-      if s == nil:
+      if s.isNil:
         rawMessage(errCannotOpenFile, filename)
         return false
     else:

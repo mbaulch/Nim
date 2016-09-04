@@ -210,7 +210,7 @@ proc newAsgnStmt(le, ri: PNode, info: TLineInfo): PNode =
 proc makeClosure*(prc: PSym; env: PNode; info: TLineInfo): PNode =
   result = newNodeIT(nkClosure, info, prc.typ)
   result.add(newSymNode(prc))
-  if env == nil:
+  if env.isNil:
     result.add(newNodeIT(nkNilLit, info, getSysType(tyNil)))
   else:
     if env.skipConv.kind == nkClosure:
@@ -345,7 +345,7 @@ proc addClosureParam(c: var DetectionPass; fn: PSym) =
   var cp = getEnvParam(fn)
   let owner = if fn.kind == skIterator: fn else: fn.skipGenericOwner
   let t = c.getEnvTypeForOwner(owner)
-  if cp == nil:
+  if cp.isNil:
     cp = newSym(skParam, getIdent(paramName), fn, fn.info)
     incl(cp.flags, sfFromGeneric)
     cp.typ = t
@@ -460,7 +460,7 @@ proc accessViaEnvParam(n: PNode; owner: PSym): PNode =
       if field != nil:
         return rawIndirectAccess(access, field, n.info)
       let upField = lookupInRecord(obj.n, getIdent(upName))
-      if upField == nil: break
+      if upField.isNil: break
       access = rawIndirectAccess(access, upField, n.info)
   localError(n.info, "internal error: environment misses: " & s.name.s)
   result = n
@@ -495,7 +495,7 @@ proc getUpViaParam(owner: PSym): PNode =
   result = p.newSymNode
   if owner.isIterator:
     let upField = lookupInRecord(p.typ.lastSon.n, getIdent(upName))
-    if upField == nil:
+    if upField.isNil:
       localError(owner.info, "could not find up reference for closure iter")
     else:
       result = rawIndirectAccess(result, upField, p.info)
@@ -674,7 +674,7 @@ proc symToClosure(n: PNode; owner: PSym; d: DetectionPass;
         return makeClosure(s, access, n.info)
       let obj = access.typ.sons[0]
       let upField = lookupInRecord(obj.n, getIdent(upName))
-      if upField == nil:
+      if upField.isNil:
         localError(n.info, "internal error: no environment found")
         return n
       access = rawIndirectAccess(access, upField, n.info)

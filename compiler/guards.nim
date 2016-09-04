@@ -103,7 +103,7 @@ proc swapArgs(fact: PNode, newOp: PSym): PNode =
   result.sons[2] = fact.sons[1]
 
 proc neg(n: PNode): PNode =
-  if n == nil: return nil
+  if n.isNil: return nil
   case n.getMagic
   of mNot:
     result = n.sons[1]

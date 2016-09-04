@@ -234,7 +234,7 @@ proc suggestFieldAccess(c: PContext, n: PNode, outputs: var int) =
         typ = nil
       else:
         let m = gImportModule(c.module, fullpath.fileInfoIdx)
-        if m == nil: typ = nil
+        if m.isNil: typ = nil
         else:
           for it in items(n.sym.tab):
             if filterSym(it):
@@ -242,7 +242,7 @@ proc suggestFieldAccess(c: PContext, n: PNode, outputs: var int) =
               inc outputs
           suggestResult(symToSuggest(m, isLocal=false, $ideMod, 100))
 
-  if typ == nil:
+  if typ.isNil:
     # a module symbol has no type for example:
     if n.kind == nkSym and n.sym.kind == skModule:
       if n.sym == c.module:
@@ -272,7 +272,7 @@ proc suggestFieldAccess(c: PContext, n: PNode, outputs: var int) =
       var t = typ
       while true:
         suggestObject(c, t.n, outputs)
-        if t.sons[0] == nil: break
+        if t.sons[0].isNil: break
         t = skipTypes(t.sons[0], skipPtrs)
       suggestOperations(c, n, typ, outputs)
     elif typ.kind == tyTuple and typ.n != nil:
@@ -341,7 +341,7 @@ var
 
 proc findUsages(info: TLineInfo; s: PSym) =
   if suggestVersion < 2:
-    if usageSym == nil and isTracked(info, s.name.s.len):
+    if usageSym.isNil and isTracked(info, s.name.s.len):
       usageSym = s
       suggestResult(symToSuggest(s, isLocal=false, $ideUse, 100))
     elif s == usageSym:
@@ -366,7 +366,7 @@ proc ensureIdx[T](x: var T, y: int) =
   if x.len <= y: x.setLen(y+1)
 
 proc ensureSeq[T](x: var seq[T]) =
-  if x == nil: newSeq(x, 0)
+  if x.isNil: newSeq(x, 0)
 
 proc suggestSym*(info: TLineInfo; s: PSym; isDecl=true) {.inline.} =
   ## misnamed: should be 'symDeclared'
@@ -424,7 +424,7 @@ proc suggestExpr*(c: PContext, node: PNode) =
 
   if gIdeCmd == ideSug:
     var n = if nfIsCursor in node.flags: node else: findClosestDot(node)
-    if n == nil: n = node
+    if n.isNil: n = node
     if n.kind == nkDotExpr:
       var obj = safeSemExpr(c, n.sons[0])
       suggestFieldAccess(c, obj, outputs)
@@ -437,16 +437,16 @@ proc suggestExpr*(c: PContext, node: PNode) =
 
   elif gIdeCmd == ideCon:
     var n = if nfIsCursor in node.flags: node else: findClosestCall(node)
-    if n == nil: n = node
+    if n.isNil: n = node
     if n.kind in nkCallKinds:
       var a = copyNode(n)
       var x = safeSemExpr(c, n.sons[0])
-      if x.kind == nkEmpty or x.typ == nil: x = n.sons[0]
+      if x.kind == nkEmpty or x.typ.isNil: x = n.sons[0]
       addSon(a, x)
       for i in 1..sonsLen(n)-1:
         # use as many typed arguments as possible:
         var x = safeSemExpr(c, n.sons[i])
-        if x.kind == nkEmpty or x.typ == nil: break
+        if x.kind == nkEmpty or x.typ.isNil: break
         addSon(a, x)
       suggestCall(c, a, n, outputs)
 

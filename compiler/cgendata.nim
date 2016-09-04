@@ -81,7 +81,7 @@ type
                               # with a regular break
     options*: TOptions        # options that should be used for code
                               # generation; this is the same as prc.options
-                              # unless prc == nil
+                              # unless prc.isNil
     maxFrameLen*: int         # max length of frame descriptor
     module*: BModule          # used to prevent excessive parameter passing
     withinLoop*: int          # > 0 if we are within a loop

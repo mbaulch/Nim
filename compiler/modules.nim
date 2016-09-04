@@ -81,7 +81,7 @@ proc resetModule*(fileIdx: int32) =
 
 proc resetModule*(module: PSym) =
   let conflict = getModule(module.position.int32)
-  if conflict == nil: return
+  if conflict.isNil: return
   doAssert conflict == module
   resetModule(module.position.int32)
   initStrTable(module.tab)
@@ -144,7 +144,7 @@ proc newModule(fileIdx: int32): PSym =
   result.info = newLineInfo(fileIdx, 1, 1)
   let pack = getIdent(getPackageName(filename))
   var packSym = packageSyms.strTableGet(pack)
-  if packSym == nil:
+  if packSym.isNil:
     let pck = getPackageName(filename)
     let pck2 = if pck.len > 0: pck else: "unknown"
     packSym = newSym(skPackage, getIdent(pck2), nil, result.info)
@@ -169,7 +169,7 @@ proc newModule(fileIdx: int32): PSym =
 
 proc compileModule*(fileIdx: int32, flags: TSymFlags): PSym =
   result = getModule(fileIdx)
-  if result == nil:
+  if result.isNil:
     growCache gMemCacheData, fileIdx
     gMemCacheData[fileIdx].needsRecompile = Probing
     result = newModule(fileIdx)
@@ -215,7 +215,7 @@ proc includeModule*(s: PSym, fileIdx: int32): PNode {.procvar.} =
     doHash(fileIdx)
 
 proc compileSystemModule* =
-  if magicsys.systemModule == nil:
+  if magicsys.systemModule.isNil:
     systemFileIdx = fileInfoIdx(options.libpath/"system.nim")
     discard compileModule(systemFileIdx, {sfSystemModule})
 

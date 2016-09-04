@@ -37,7 +37,7 @@ proc getStrLit(m: BModule, s: string): Rope =
        [result, makeCString(s), rope(len(s))])
 
 proc genLiteral(p: BProc, n: PNode, ty: PType): Rope =
-  if ty == nil: internalError(n.info, "genLiteral: ty is nil")
+  if ty.isNil: internalError(n.info, "genLiteral: ty is nil")
   case n.kind
   of nkCharLit..nkUInt64Lit:
     case skipTypes(ty, abstractVarRange).kind
@@ -221,7 +221,7 @@ proc genOptAsgnTuple(p: BProc, dest, src: TLoc, flags: TAssignmentFlags) =
 
 proc genOptAsgnObject(p: BProc, dest, src: TLoc, flags: TAssignmentFlags,
                       t: PNode) =
-  if t == nil: return
+  if t.isNil: return
   let newflags =
     if src.s == OnStatic:
       flags + {needToCopy}
@@ -732,7 +732,7 @@ proc lookupFieldAgain(p: BProc, ty: PType; field: PSym; r: var Rope): PSym =
     if result != nil: break
     if not p.module.compileToCpp: add(r, ".Sup")
     ty = getUniqueType(ty.sons[0])
-  if result == nil: internalError(field.info, "genCheckedRecordField")
+  if result.isNil: internalError(field.info, "genCheckedRecordField")
 
 proc genRecordField(p: BProc, e: PNode, d: var TLoc) =
   var a: TLoc
@@ -746,7 +746,7 @@ proc genRecordField(p: BProc, e: PNode, d: var TLoc) =
     putIntoDest(p, d, f.typ, r, a.s)
   else:
     let field = lookupFieldAgain(p, ty, f, r)
-    if field.loc.r == nil: internalError(e.info, "genRecordField 3")
+    if field.loc.r.isNil: internalError(e.info, "genRecordField 3")
     addf(r, ".$1", [field.loc.r])
     putIntoDest(p, d, field.typ, r, a.s)
   #d.s = a.s
@@ -793,7 +793,7 @@ proc genCheckedRecordField(p: BProc, e: PNode, d: var TLoc) =
     var r = rdLoc(a)
     let f = e.sons[0].sons[1].sym
     let field = lookupFieldAgain(p, ty, f, r)
-    if field.loc.r == nil:
+    if field.loc.r.isNil:
       internalError(e.info, "genCheckedRecordField") # generate the checks:
     genFieldCheck(p, e, r, field, ty)
     add(r, rfmt(nil, ".$1", field.loc.r))
@@ -1157,7 +1157,7 @@ proc genObjConstr(p: BProc, e: PNode, d: var TLoc) =
     var tmp2: TLoc
     tmp2.r = r
     let field = lookupFieldAgain(p, ty, it.sons[0].sym, tmp2.r)
-    if field.loc.r == nil: internalError(e.info, "genObjConstr")
+    if field.loc.r.isNil: internalError(e.info, "genObjConstr")
     if it.len == 3 and optFieldCheck in p.options:
       genFieldCheck(p, it.sons[2], r, field, ty)
     add(tmp2.r, ".")
@@ -1965,7 +1965,7 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
         localError(n.info, "request to generate code for .compileTime proc: " &
            sym.name.s)
       genProc(p.module, sym)
-      if sym.loc.r == nil or sym.loc.t == nil:
+      if sym.loc.r.isNil or sym.loc.t.isNil:
         internalError(n.info, "expr: proc not init " & sym.name.s)
       putLocIntoDest(p, d, sym.loc)
     of skConst:
@@ -1977,7 +1977,7 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
       putIntoDest(p, d, n.typ, rope(sym.position))
     of skVar, skForVar, skResult, skLet:
       if sfGlobal in sym.flags: genVarPrototype(p.module, sym)
-      if sym.loc.r == nil or sym.loc.t == nil:
+      if sym.loc.r.isNil or sym.loc.t.isNil:
         #echo "FAILED FOR PRCO ", p.prc.name.s
         #echo renderTree(p.prc.ast, {renderIds})
         internalError n.info, "expr: var not init " & sym.name.s & "_" & $sym.id
@@ -1990,13 +1990,13 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
       else:
         putLocIntoDest(p, d, sym.loc)
     of skTemp:
-      if sym.loc.r == nil or sym.loc.t == nil:
+      if sym.loc.r.isNil or sym.loc.t.isNil:
         #echo "FAILED FOR PRCO ", p.prc.name.s
         #echo renderTree(p.prc.ast, {renderIds})
         internalError(n.info, "expr: temp not init " & sym.name.s & "_" & $sym.id)
       putLocIntoDest(p, d, sym.loc)
     of skParam:
-      if sym.loc.r == nil or sym.loc.t == nil:
+      if sym.loc.r.isNil or sym.loc.t.isNil:
         # echo "FAILED FOR PRCO ", p.prc.name.s
         # debug p.prc.typ.n
         # echo renderTree(p.prc.ast, {renderIds})
@@ -2071,7 +2071,7 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
   of nkLambdaKinds:
     var sym = n.sons[namePos].sym
     genProc(p.module, sym)
-    if sym.loc.r == nil or sym.loc.t == nil:
+    if sym.loc.r.isNil or sym.loc.t.isNil:
       internalError(n.info, "expr: proc not init " & sym.name.s)
     putLocIntoDest(p, d, sym.loc)
   of nkClosure: genClosure(p, n, d)

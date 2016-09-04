@@ -180,7 +180,7 @@ const
   HighRegisterPressure = 40
 
 proc bestEffort(c: PCtx): TLineInfo =
-  (if c.prc == nil: c.module.info else: c.prc.sym.info)
+  (if c.prc.isNil: c.module.info else: c.prc.sym.info)
 
 proc getTemp(cc: PCtx; tt: PType): TRegister =
   let typ = tt.skipTypesOrNil({tyStatic})
@@ -890,7 +890,7 @@ proc genMagic(c: PCtx; n: PNode; dest: var TDest; m: TMagic) =
     c.freeTemp(tmp)
   of mSwap:
     unused(n, dest)
-    c.gen(lowerSwap(n, if c.prc == nil: c.module else: c.prc.sym))
+    c.gen(lowerSwap(n, if c.prc.isNil: c.module else: c.prc.sym))
   of mIsNil: genUnaryABC(c, n, dest, opcIsNil)
   of mCopyStr:
     if dest < 0: dest = c.getTemp(n.typ)
@@ -1633,7 +1633,7 @@ proc matches(s: PSym; x: string): bool =
   var s = s
   var L = y.len-1
   while L >= 0:
-    if s == nil or (y[L].cmpIgnoreStyle(s.name.s) != 0 and y[L] != "*"):
+    if s.isNil or (y[L].cmpIgnoreStyle(s.name.s) != 0 and y[L] != "*"):
       return false
     s = s.owner
     dec L
@@ -1643,7 +1643,7 @@ proc matches(s: PSym; y: varargs[string]): bool =
   var s = s
   var L = y.len-1
   while L >= 0:
-    if s == nil or (y[L].cmpIgnoreStyle(s.name.s) != 0 and y[L] != "*"):
+    if s.isNil or (y[L].cmpIgnoreStyle(s.name.s) != 0 and y[L] != "*"):
       return false
     s = if sfFromGeneric in s.flags: s.owner.owner else: s.owner
     dec L

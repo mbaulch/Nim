@@ -40,7 +40,7 @@ proc searchInstTypes*(key: PType): PType =
                  key.sons[0] == genericTyp and
                  genericTyp.sym != nil
 
-  if genericTyp.sym.typeInstCache == nil:
+  if genericTyp.sym.typeInstCache.isNil:
     return
 
   for inst in genericTyp.sym.typeInstCache:
@@ -152,7 +152,7 @@ proc reResolveCallsWithTypedescParams(cl: var TReplTypeVars, n: PNode): PNode =
   return n
 
 proc replaceTypeVarsN(cl: var TReplTypeVars, n: PNode; start=0): PNode =
-  if n == nil: return
+  if n.isNil: return
   result = copyNode(n)
   if n.typ != nil:
     result.typ = replaceTypeVarsT(cl, n.typ)
@@ -169,7 +169,7 @@ proc replaceTypeVarsN(cl: var TReplTypeVars, n: PNode; start=0): PNode =
     var branch: PNode = nil              # the branch to take
     for i in countup(0, sonsLen(n) - 1):
       var it = n.sons[i]
-      if it == nil: illFormedAst(n)
+      if it.isNil: illFormedAst(n)
       case it.kind
       of nkElifBranch:
         checkSonsLen(it, 2)
@@ -177,10 +177,10 @@ proc replaceTypeVarsN(cl: var TReplTypeVars, n: PNode; start=0): PNode =
         var e = cl.c.semConstExpr(cl.c, cond)
         if e.kind != nkIntLit:
           internalError(e.info, "ReplaceTypeVarsN: when condition not a bool")
-        if e.intVal != 0 and branch == nil: branch = it.sons[1]
+        if e.intVal != 0 and branch.isNil: branch = it.sons[1]
       of nkElse:
         checkSonsLen(it, 1)
-        if branch == nil: branch = it.sons[0]
+        if branch.isNil: branch = it.sons[0]
       else: illFormedAst(n)
     if branch != nil:
       result = replaceTypeVarsN(cl, branch)
@@ -201,12 +201,12 @@ proc replaceTypeVarsN(cl: var TReplTypeVars, n: PNode; start=0): PNode =
         result.sons[i] = replaceTypeVarsN(cl, n.sons[i])
 
 proc replaceTypeVarsS(cl: var TReplTypeVars, s: PSym): PSym =
-  if s == nil: return nil
+  if s.isNil: return nil
   # symbol is not our business:
   if cl.owner != nil and s.owner != cl.owner:
     return s
   #result = PSym(idTableGet(cl.symMap, s))
-  #if result == nil:
+  #if result.isNil:
   result = copySym(s, false)
   incl(result.flags, sfFromGeneric)
   #idTablePut(cl.symMap, s, result)
@@ -216,7 +216,7 @@ proc replaceTypeVarsS(cl: var TReplTypeVars, s: PSym): PSym =
 
 proc lookupTypeVar(cl: var TReplTypeVars, t: PType): PType =
   result = PType(idTableGet(cl.typeMap, t))
-  if result == nil:
+  if result.isNil:
     if cl.allowMetaTypes or tfRetType in t.flags: return
     localError(t.sym.info, errCannotInstantiateX, typeToString(t))
     result = errorType(cl.c)
@@ -232,7 +232,7 @@ proc instCopyType*(cl: var TReplTypeVars, t: PType): PType =
   result = copyType(t, t.owner, cl.allowMetaTypes)
   result.flags.incl tfFromGeneric
   if not (t.kind in tyMetaTypes or
-         (t.kind == tyStatic and t.n == nil)):
+         (t.kind == tyStatic and t.n.isNil)):
     result.flags.excl tfInstClearedFlags
 
 proc handleGenericInvocation(cl: var TReplTypeVars, t: PType): PType =
@@ -344,7 +344,7 @@ proc eraseVoidParams*(t: PType) =
 proc skipIntLiteralParams*(t: PType) =
   for i in 0 .. <t.sonsLen:
     let p = t.sons[i]
-    if p == nil: continue
+    if p.isNil: continue
     let skipped = p.skipIntLit
     if skipped != p:
       t.sons[i] = skipped
@@ -384,7 +384,7 @@ proc replaceTypeVarsTAux(cl: var TReplTypeVars, t: PType): PType =
     inc cl.recursionLimit
 
   result = t
-  if t == nil: return
+  if t.isNil: return
 
   if t.kind in {tyStatic, tyGenericParam} + tyTypeClasses:
     let lookup = PType(idTableGet(cl.typeMap, t))

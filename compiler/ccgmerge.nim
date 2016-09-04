@@ -231,7 +231,7 @@ when not defined(nimhygiene):
 
 template withCFile(cfilename: string, body: untyped) =
   var s = llStreamOpen(cfilename, fmRead)
-  if s == nil: return
+  if s.isNil: return
   var L {.inject.}: TBaseLexer
   openBaseLexer(L, s)
   var k {.inject.} = newStringOfCap("NIM_merge_FORWARD_TYPES".len)

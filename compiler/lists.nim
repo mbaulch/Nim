@@ -35,10 +35,10 @@ proc append*(list: var TLinkedList, entry: PListEntry) =
   entry.next = nil
   entry.prev = list.tail
   if list.tail != nil:
-    assert(list.tail.next == nil)
+    assert(list.tail.next.isNil)
     list.tail.next = entry
   list.tail = entry
-  if list.head == nil: list.head = entry
+  if list.head.isNil: list.head = entry
 
 proc contains*(list: TLinkedList, data: string): bool =
   var it = list.head
@@ -63,10 +63,10 @@ proc prepend*(list: var TLinkedList, entry: PListEntry) =
   entry.prev = nil
   entry.next = list.head
   if list.head != nil:
-    assert(list.head.prev == nil)
+    assert(list.head.prev.isNil)
     list.head.prev = entry
   list.head = entry
-  if list.tail == nil: list.tail = entry
+  if list.tail.isNil: list.tail = entry
 
 proc prependStr*(list: var TLinkedList, data: string) =
   prepend(list, newStrEntry(data))

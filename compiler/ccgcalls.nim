@@ -198,7 +198,7 @@ proc genClosureCall(p: BProc, le, ri: PNode, d: var TLoc) =
     result = getClosureType(p.module, t, clHalf)
 
   proc addComma(r: Rope): Rope =
-    result = if r == nil: r else: r & ~", "
+    result = if r.isNil: r else: r & ~", "
 
   const PatProc = "$1.ClEnv? $1.ClPrc($3$1.ClEnv):(($4)($1.ClPrc))($2)"
   const PatIter = "$1.ClPrc($3$1.ClEnv)" # we know the env exists
@@ -400,7 +400,7 @@ proc genPatternCall(p: BProc; ri: PNode; pat: string; typ: PType): Rope =
       var idx, stars: int
       if scanCppGenericSlot(pat, i, idx, stars):
         var t = resolveStarsInCppType(typ, idx, stars)
-        if t == nil: result.add(~"void")
+        if t.isNil: result.add(~"void")
         else: result.add(getTypeDesc(p.module, t))
     else:
       let start = i

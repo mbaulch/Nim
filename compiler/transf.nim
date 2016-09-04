@@ -86,7 +86,7 @@ proc pushTransCon(c: PTransf, t: PTransCon) =
   c.transCon = t
 
 proc popTransCon(c: PTransf) =
-  if (c.transCon == nil): internalError("popTransCon")
+  if (c.transCon.isNil): internalError("popTransCon")
   c.transCon = c.transCon.next
 
 proc getCurrOwner(c: PTransf): PSym =
@@ -604,11 +604,11 @@ proc transformCase(c: PTransf, n: PNode): PTransNode =
     var e = transform(c, it)
     case it.kind
     of nkElifBranch:
-      if ifs.PNode == nil:
+      if ifs.PNode.isNil:
         ifs = newTransNode(nkIfStmt, it.info, 0)
       ifs.add(e)
     of nkElse:
-      if ifs.PNode == nil: result.add(e)
+      if ifs.PNode.isNil: result.add(e)
       else: ifs.add(e)
     else:
       result.add(e)

@@ -72,7 +72,7 @@ proc fitNode(c: PContext, formal: PType, arg: PNode): PNode =
     result.typ = formal
   else:
     result = indexTypesMatch(c, formal, arg.typ, arg)
-    if result == nil:
+    if result.isNil:
       typeMismatch(arg, formal, arg.typ)
       # error correction:
       result = copyTree(arg)
@@ -94,8 +94,8 @@ var commonTypeBegin = PType(kind: tyExpr)
 proc commonType*(x, y: PType): PType =
   # new type relation that is used for array constructors,
   # if expressions, etc.:
-  if x == nil: return x
-  if y == nil: return y
+  if x.isNil: return x
+  if y.isNil: return y
   var a = skipTypes(x, {tyGenericInst})
   var b = skipTypes(y, {tyGenericInst})
   result = x
@@ -105,7 +105,7 @@ proc commonType*(x, y: PType): PType =
   elif b.kind == tyStmt: result = b
   elif a.kind == tyTypeDesc:
     # turn any concrete typedesc into the abstract typedesc type
-    if a.sons == nil: result = a
+    if a.sons.isNil: result = a
     else:
       result = newType(tyTypeDesc, a.owner)
       rawAddSon(result, newType(tyNone, a.owner))
@@ -221,9 +221,9 @@ when false:
     result = newEvalContext(c.module, mode)
     result.getType = proc (n: PNode): PNode =
       result = tryExpr(c, n)
-      if result == nil:
+      if result.isNil:
         result = newSymNode(errorSym(c, n))
-      elif result.typ == nil:
+      elif result.typ.isNil:
         result = newSymNode(getSysSym"void")
       else:
         result.typ = makeTypeDesc(c, result.typ)
@@ -246,7 +246,7 @@ proc fixupTypeAfterEval(c: PContext, evaluated, eOrig: PNode): PNode =
     #result = fitNode(c, e.typ, result) inlined with special case:
     let arg = result
     result = indexTypesMatch(c, eOrig.typ, arg.typ, arg)
-    if result == nil:
+    if result.isNil:
       result = arg
       # for 'tcnstseq' we support [] to become 'seq'
       if eOrig.typ.skipTypes(abstractInst).kind == tySequence and
@@ -255,7 +255,7 @@ proc fixupTypeAfterEval(c: PContext, evaluated, eOrig: PNode): PNode =
 
 proc tryConstExpr(c: PContext, n: PNode): PNode =
   var e = semExprWithType(c, n)
-  if e == nil: return
+  if e.isNil: return
 
   result = getConstExpr(c.module, e)
   if result != nil: return
@@ -269,7 +269,7 @@ proc tryConstExpr(c: PContext, n: PNode): PNode =
 
   try:
     result = evalConstExpr(c.module, e)
-    if result == nil or result.kind == nkEmpty:
+    if result.isNil or result.kind == nkEmpty:
       result = nil
     else:
       result = fixupTypeAfterEval(c, result, e)
@@ -283,14 +283,14 @@ proc tryConstExpr(c: PContext, n: PNode): PNode =
 
 proc semConstExpr(c: PContext, n: PNode): PNode =
   var e = semExprWithType(c, n)
-  if e == nil:
+  if e.isNil:
     localError(n.info, errConstExprExpected)
     return n
   result = getConstExpr(c.module, e)
-  if result == nil:
+  if result.isNil:
     #if e.kind == nkEmpty: globalError(n.info, errConstExprExpected)
     result = evalConstExpr(c.module, e)
-    if result == nil or result.kind == nkEmpty:
+    if result.isNil or result.kind == nkEmpty:
       if e.info != n.info:
         pushInfoContext(n.info)
         localError(e.info, errConstExprExpected)
@@ -326,7 +326,7 @@ proc semAfterMacroCall(c: PContext, n: PNode, s: PSym,
   result = n
   excl(n.flags, nfSem)
   #resetSemFlag n
-  if s.typ.sons[0] == nil:
+  if s.typ.sons[0].isNil:
     result = semStmt(c, result)
   else:
     case s.typ.sons[0].kind
@@ -358,7 +358,7 @@ proc semMacroExpr(c: PContext, n, nOrig: PNode, sym: PSym,
   if sym == c.p.owner:
     globalError(n.info, errRecursiveDependencyX, sym.name.s)
 
-  #if c.evalContext == nil:
+  #if c.evalContext.isNil:
   #  c.evalContext = c.createEvalContext(emStatic)
   result = evalMacroCall(c.module, n, nOrig, sym)
   if efNoSemCheck notin flags:
@@ -367,16 +367,16 @@ proc semMacroExpr(c: PContext, n, nOrig: PNode, sym: PSym,
 
 proc forceBool(c: PContext, n: PNode): PNode =
   result = fitNode(c, getSysType(tyBool), n)
-  if result == nil: result = n
+  if result.isNil: result = n
 
 proc semConstBoolExpr(c: PContext, n: PNode): PNode =
   let nn = semExprWithType(c, n)
   result = fitNode(c, getSysType(tyBool), nn)
-  if result == nil:
+  if result.isNil:
     localError(n.info, errConstExprExpected)
     return nn
   result = getConstExpr(c.module, result)
-  if result == nil:
+  if result.isNil:
     localError(n.info, errConstExprExpected)
     result = nn
 
@@ -388,7 +388,7 @@ proc addCodeForGenerics(c: PContext, n: PNode) =
   for i in countup(c.lastGenericIdx, c.generics.len - 1):
     var prc = c.generics[i].inst.sym
     if prc.kind in {skProc, skMethod, skConverter} and prc.magic == mNone:
-      if prc.ast == nil or prc.ast.sons[bodyPos] == nil:
+      if prc.ast.isNil or prc.ast.sons[bodyPos].isNil:
         internalError(prc.info, "no code for " & prc.name.s)
       else:
         addSon(n, prc.ast)
@@ -429,7 +429,7 @@ proc myOpenCached(module: PSym, rd: PRodReader): PPassContext =
   for m in items(rd.methods): methodDef(m, true)
 
 proc isImportSystemStmt(n: PNode): bool =
-  if magicsys.systemModule == nil: return false
+  if magicsys.systemModule.isNil: return false
   case n.kind
   of nkImportStmt:
     for x in n:

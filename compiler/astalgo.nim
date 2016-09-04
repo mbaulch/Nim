@@ -254,7 +254,7 @@ proc ropeConstr(indent: int, c: openArray[Rope]): Rope =
 
 proc symToYamlAux(n: PSym, marker: var IntSet, indent: int,
                   maxRecDepth: int): Rope =
-  if n == nil:
+  if n.isNil:
     result = rope("null")
   elif containsOrIncl(marker, n.id):
     result = "\"$1 @$2\"" % [rope(n.name.s), rope(
@@ -275,7 +275,7 @@ proc symToYamlAux(n: PSym, marker: var IntSet, indent: int,
 
 proc typeToYamlAux(n: PType, marker: var IntSet, indent: int,
                    maxRecDepth: int): Rope =
-  if n == nil:
+  if n.isNil:
     result = rope("null")
   elif containsOrIncl(marker, n.id):
     result = "\"$1 @$2\"" % [rope($n.kind), rope(
@@ -303,7 +303,7 @@ proc typeToYamlAux(n: PType, marker: var IntSet, indent: int,
 
 proc treeToYamlAux(n: PNode, marker: var IntSet, indent: int,
                    maxRecDepth: int): Rope =
-  if n == nil:
+  if n.isNil:
     result = rope("null")
   else:
     var istr = rspaces(indent + 2)
@@ -355,7 +355,7 @@ proc symToYaml(n: PSym, indent: int = 0, maxRecDepth: int = - 1): Rope =
 
 proc debugTree*(n: PNode, indent: int, maxRecDepth: int; renderType=false): Rope
 proc debugType(n: PType, maxRecDepth=100): Rope =
-  if n == nil:
+  if n.isNil:
     result = rope("null")
   else:
     result = rope($n.kind)
@@ -369,7 +369,7 @@ proc debugType(n: PType, maxRecDepth=100): Rope =
       add(result, "(")
       for i in countup(0, sonsLen(n) - 1):
         if i > 0: add(result, ", ")
-        if n.sons[i] == nil:
+        if n.sons[i].isNil:
           add(result, "null")
         else:
           add(result, debugType(n.sons[i], maxRecDepth-1))
@@ -380,7 +380,7 @@ proc debugType(n: PType, maxRecDepth=100): Rope =
 
 proc debugTree(n: PNode, indent: int, maxRecDepth: int;
                renderType=false): Rope =
-  if n == nil:
+  if n.isNil:
     result = rope("null")
   else:
     var istr = rspaces(indent + 2)
@@ -422,7 +422,7 @@ proc debugTree(n: PNode, indent: int, maxRecDepth: int;
     addf(result, "$N$1}", [rspaces(indent)])
 
 proc debug(n: PSym) =
-  if n == nil:
+  if n.isNil:
     echo("null")
   elif n.kind == skUnknown:
     echo("skUnknown")
@@ -458,7 +458,7 @@ proc objectSetRawInsert(data: var TObjectSeq, obj: RootRef) =
   while data[h] != nil:
     assert(data[h] != obj)
     h = nextTry(h, high(data))
-  assert(data[h] == nil)
+  assert(data[h].isNil)
   data[h] = obj
 
 proc objectSetEnlarge(t: var TObjectSet) =
@@ -478,7 +478,7 @@ proc objectSetContainsOrIncl(t: var TObjectSet, obj: RootRef): bool =
   var h: Hash = hashNode(obj) and high(t.data)
   while true:
     var it = t.data[h]
-    if it == nil: break
+    if it.isNil: break
     if it == obj:
       return true             # found it
     h = nextTry(h, high(t.data))
@@ -486,7 +486,7 @@ proc objectSetContainsOrIncl(t: var TObjectSet, obj: RootRef): bool =
     objectSetEnlarge(t)
     objectSetRawInsert(t.data, obj)
   else:
-    assert(t.data[h] == nil)
+    assert(t.data[h].isNil)
     t.data[h] = obj
   inc(t.counter)
   result = false
@@ -509,7 +509,7 @@ proc strTableRawInsert(data: var TSymSeq, n: PSym) =
         #InternalError(n.info, "StrTableRawInsert: " & n.name.s)
         return
       h = nextTry(h, high(data))
-    assert(data[h] == nil)
+    assert(data[h].isNil)
     data[h] = n
   else:
     # slow path; we have to ensure immediate symbols are preferred for
@@ -523,7 +523,7 @@ proc strTableRawInsert(data: var TSymSeq, n: PSym) =
       if data[h] == n: return
       if favPos < 0 and data[h].name.id == n.name.id: favPos = h
       h = nextTry(h, high(data))
-    assert(data[h] == nil)
+    assert(data[h].isNil)
     data[h] = n
     if favPos >= 0: swap data[h], data[favPos]
 
@@ -567,7 +567,7 @@ proc strTableIncl*(t: var TStrTable, n: PSym; onConflictKeepOld=false): bool {.d
   var replaceSlot = -1
   while true:
     var it = t.data[h]
-    if it == nil: break
+    if it.isNil: break
     # Semantic checking can happen multiple times thanks to templates
     # and overloading: (var x=@[]; x).mapIt(it).
     # So it is possible the very same sym is added multiple
@@ -584,7 +584,7 @@ proc strTableIncl*(t: var TStrTable, n: PSym; onConflictKeepOld=false): bool {.d
     strTableEnlarge(t)
     strTableRawInsert(t.data, n)
   else:
-    assert(t.data[h] == nil)
+    assert(t.data[h].isNil)
     t.data[h] = n
   inc(t.counter)
   result = false
@@ -593,7 +593,7 @@ proc strTableGet(t: TStrTable, name: PIdent): PSym =
   var h: Hash = name.h and high(t.data)
   while true:
     result = t.data[h]
-    if result == nil: break
+    if result.isNil: break
     if result.name.id == name.id: break
     h = nextTry(h, high(t.data))
 
@@ -662,7 +662,7 @@ iterator items*(tab: TStrTable): PSym =
 
 proc hasEmptySlot(data: TIdPairSeq): bool =
   for h in countup(0, high(data)):
-    if data[h].key == nil:
+    if data[h].key.isNil:
       return true
   result = false
 
@@ -701,7 +701,7 @@ proc idTableRawInsert(data: var TIdPairSeq, key: PIdObj, val: RootRef) =
   while data[h].key != nil:
     assert(data[h].key.id != key.id)
     h = nextTry(h, high(data))
-  assert(data[h].key == nil)
+  assert(data[h].key.isNil)
   data[h].key = key
   data[h].val = val
 
@@ -753,7 +753,7 @@ proc idNodeTableRawInsert(data: var TIdNodePairSeq, key: PIdObj, val: PNode) =
   while data[h].key != nil:
     assert(data[h].key.id != key.id)
     h = nextTry(h, high(data))
-  assert(data[h].key == nil)
+  assert(data[h].key.isNil)
   data[h].key = key
   data[h].val = val
 

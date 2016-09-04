@@ -103,7 +103,7 @@ proc pickBestCandidate(c: PContext, headSymbol: PNode,
       # Symbol table has been modified. Restart and pre-calculate all syms
       # before any further candidate init and compare. SLOW, but rare case.
       syms = initCandidateSymbols(c, headSymbol, initialBinding, filter, best, alt, o)
-    if syms == nil:
+    if syms.isNil:
       sym = nextOverloadIter(o, c, headSymbol)
       scope = o.lastOverloadScope
     elif nextSymIndex < syms.len:
@@ -429,7 +429,7 @@ proc explicitGenericInstantiation(c: PContext, n: PNode, s: PSym): PNode =
          "; got " & $(n.len-1) & " type(s) but expected " & $expected)
       return n
     result = explicitGenericSym(c, n, s)
-    if result == nil: result = explicitGenericInstError(n)
+    if result.isNil: result = explicitGenericInstError(n)
   elif a.kind in {nkClosedSymChoice, nkOpenSymChoice}:
     # choose the generic proc with the proper number of type parameters.
     # XXX I think this could be improved by reusing sigmatch.paramTypesMatch.

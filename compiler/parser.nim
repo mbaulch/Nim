@@ -111,7 +111,7 @@ template sameOrNoInd(p): bool = p.tok.indent == p.currInd or p.tok.indent < 0
 proc rawSkipComment(p: var TParser, node: PNode) =
   if p.tok.tokType == tkComment:
     if node != nil:
-      if node.comment == nil: node.comment = ""
+      if node.comment.isNil: node.comment = ""
       add(node.comment, p.tok.literal)
     else:
       parMessage(p, errInternal, "skipComment")
@@ -1409,7 +1409,7 @@ proc parseTry(p: var TParser; isExpr: bool): PNode =
     addSon(b, parseStmt(p))
     addSon(result, b)
     if b.kind == nkFinally: break
-  if b == nil: parMessage(p, errTokenExpected, "except")
+  if b.isNil: parMessage(p, errTokenExpected, "except")
 
 proc parseExceptBlock(p: var TParser, kind: TNodeKind): PNode =
   #| exceptBlock = 'except' colcom stmt

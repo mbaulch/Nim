@@ -23,11 +23,11 @@ proc pluginMatches(p: Plugin; s: PSym): bool =
   if s.name.id != p.fn.id:
     return false
   let module = s.skipGenericOwner
-  if module == nil or module.kind != skModule or
+  if module.isNil or module.kind != skModule or
       module.name.id != p.module.id:
     return false
   let package = module.owner
-  if package == nil or package.kind != skPackage or
+  if package.isNil or package.kind != skPackage or
       package.name.id != p.package.id:
     return false
   return true
