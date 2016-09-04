@@ -686,7 +686,8 @@ proc genProcAux(m: BModule, prc: PSym) =
     if optStackTrace in prc.options:
       #add(generatedProc, deinitFrame(p))
       add(generatedProc, "while (__nimfr_count > 0) {")
-      add(generatedProc, rfmt(p.module, "\t#popFrame(); __nimfr_count--; } $n"))
+      add(generatedProc, rfmt(p.module, "TFrame* fr = #getFrame();"))
+      add(generatedProc, rfmt(p.module, "\t#popFrame(); free(fr); __nimfr_count--; } $n"))
     add(generatedProc, returnStmt)
     add(generatedProc, ~"}$N")
   add(m.s[cfsProcs], generatedProc)
@@ -1025,7 +1026,8 @@ proc genInitCode(m: BModule) =
   add(prc, genSectionEnd(cpsStmts))
   if optStackTrace in m.initProc.options and preventStackTrace notin m.flags:
     add(prc, "while (__nimfr_count > 0) {")
-    add(prc, rfmt(m, "\t#popFrame(); __nimfr_count--; }$n"))
+    add(prc, rfmt(m, "TFrame* fr = #getFrame();"))
+    add(prc, rfmt(m, "\t#popFrame(); free(fr); __nimfr_count--; }$n"))
     #add(prc, deinitFrame(m.initProc))
   add(prc, deinitGCFrame(m.initProc))
   addf(prc, "}$N$N", [])

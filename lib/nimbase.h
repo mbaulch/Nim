@@ -403,7 +403,8 @@ struct TFrame {
 };
 
 #define nimfr(proc, file) \
-  TFrame* FR = &__nimfr_arr[__nimfr_count]; \
+  /*TFrame* FR = &__nimfr_arr[__nimfr_count];*/ \
+  TFrame* FR = malloc(sizeof(TFrame)); \
   __nimfr_count++; \
   FR->procname = proc; FR->filename = file; FR->line = 0; FR->len = 0; nimFrame(FR); \
 // TODO: Handle the nimfrs case properly. Use array (on stack) here too?

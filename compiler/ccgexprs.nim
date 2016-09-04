@@ -2071,8 +2071,8 @@ proc expr(p: BProc, n: PNode, d: var TLoc) =
         add(p.s(cpsStmts), initFrame(p, procname, prc.info.quotedFilename))
       for i in countup(0, length - 2): genStmts(p, n.sons[i])
       if newFrame:
-        add(p.s(cpsStmts), " __nimfr_count--;");
-        add(p.s(cpsStmts), rfmt(p.module, "\t#popFrame();$n"))
+        add(p.s(cpsStmts), rfmt(p.module, "TFrame* fr = #getFrame(); __nimfr_count--;"))
+        add(p.s(cpsStmts), rfmt(p.module, "\t#popFrame(); free(fr);$n"))
       setLen(n.sons, length - 1)
     else:
       for i in countup(0, length - 1): genStmts(p, n.sons[i])
